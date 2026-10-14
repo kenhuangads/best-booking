@@ -88,7 +88,7 @@ Amadeus 的免費 Self-Service API 已於 2026 年 7 月 17 日關閉。目前�
 
 | 工作 | 來源 | 原因 |
 | --- | --- | --- |
-| 搜尋結果頁、住宿、價格確認 | [SerpApi](https://serpapi.com)（Google 航班 / Google 飯店） | 真正的即時價，但免費方案每月只有約 100 次 |
+| 搜尋結果頁、住宿、價格確認 | [SerpApi](https://serpapi.com)（Google 航班 / Google 飯店） | 真正的即時價，但免費方案每月只有約 250 次 |
 | 機票追蹤盯價、價格日曆 | [Travelpayouts](https://www.travelpayouts.com)（Aviasales 快取） | 免費、每分鐘 600 次，但是過去 48 小時別人查到的價格 |
 
 追蹤流程：Travelpayouts 每隔幾分鐘盯價，發現價格低於目標或明顯下跌，App 才花一次 SerpApi 向 Google 確認，確認是真的才通知。免費額度幾乎不會用完，通知也不會是假的。
