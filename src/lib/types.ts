@@ -17,8 +17,8 @@ export interface FlightSearchParams {
   infants: number;
   cabin: Cabin;
   nonStop: boolean;
-  /** 只追蹤特定航空公司（兩碼代碼） */
-  carrier?: string;
+  /** 指定航空公司（兩碼代碼，可多選；所有航段都須是這些航空公司） */
+  carriers?: string[];
 }
 
 export interface HotelSearchParams {

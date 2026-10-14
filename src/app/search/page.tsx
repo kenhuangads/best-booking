@@ -12,7 +12,7 @@ import { HotelDetailSheet } from '@/components/HotelDetailSheet';
 import { PriceCalendarSheet } from '@/components/PriceCalendarSheet';
 import { ErrorBox, Footnote, ListSkeleton, ResultHeader, StickyCTA } from '@/components/ResultBits';
 import { Chip, EmptyState } from '@/components/ui';
-import { airlineName } from '@/lib/airlines';
+import { airlineName, airlineSummary } from '@/lib/airlines';
 import { airportCity } from '@/lib/airports';
 import { getCity } from '@/lib/cities';
 import { fetcher } from '@/lib/client';
@@ -107,12 +107,16 @@ function FlightResults({ params }: { params: FlightSearchParams }) {
   const best = data?.offers[0] ?? null;
   const title = `${airportCity(params.from)} → ${airportCity(params.to)}`;
   const pax = [`${params.adults} 成人`, params.children ? `${params.children} 兒童` : '', params.infants ? `${params.infants} 嬰兒` : ''].filter(Boolean).join(' ');
-  const subtitle = `${fmtRange(params.departDate, params.returnDate)} · ${pax} · ${CABIN_LABEL[params.cabin]}${params.nonStop ? ' · 直飛' : ''}`;
+  const subtitle = `${fmtRange(params.departDate, params.returnDate)} · ${pax} · ${CABIN_LABEL[params.cabin]}${params.nonStop ? ' · 直飛' : ''}${
+    params.carriers?.length ? ` · ${airlineSummary(params.carriers)}` : ''
+  }`;
 
   const openWatch = (o?: FlightOffer) => {
     if (o) {
       const c = o.carriers[0];
-      setDraft({ params: { ...params, carrier: c }, price: o.price, title: `${flightTitle(params)} · ${airlineName(c)}` });
+      const p = { ...params, carriers: [c] };
+      const cheapest = data?.offers.find((x) => x.carriers.every((y) => y === c))?.price ?? o.price;
+      setDraft({ params: p, price: cheapest, title: flightTitle(p) });
     } else {
       setDraft({ params, price: best?.price ?? null, title: flightTitle(params) });
     }
@@ -152,7 +156,11 @@ function FlightResults({ params }: { params: FlightSearchParams }) {
         ) : error ? (
           <ErrorBox message={(error as Error).message} onRetry={() => mutate()} />
         ) : list.length === 0 ? (
-          <EmptyState icon="🛫" title="沒有符合的航班" hint="試試取消篩選、放寬條件或更換日期" />
+          <EmptyState
+            icon="🛫"
+            title="沒有符合的航班"
+            hint={params.carriers?.length ? '你指定的航空公司可能沒飛這條航線，點右上角「修改」調整' : '試試取消篩選、放寬條件或更換日期'}
+          />
         ) : (
           list.map((o) => <FlightCard key={o.id} offer={o} best={o.id === best?.id} onClick={() => setSel(o)} />)
         )}

@@ -1,3 +1,4 @@
+import { AIRLINES, airlineSummary } from './airlines';
 import { getAirport, isTaiwan } from './airports';
 import { getCity } from './cities';
 import type { DeepLink, FlightSearchParams, HotelSearchParams } from './types';
@@ -48,6 +49,11 @@ export function flightDeepLinks(p: FlightSearchParams): DeepLink[] {
       links.push({ kind: 'airline', label: '華信航空官網', url: 'https://www.mandarin-airlines.com/' });
     }
   }
+  // 指定航空公司時，附上官網連結（台灣人常直接在官網訂票）
+  for (const c of p.carriers ?? []) {
+    const a = AIRLINES[c];
+    if (a?.site && !links.some((l) => l.url === a.site)) links.push({ kind: 'airline', label: `${a.name}官網`, url: a.site });
+  }
   return links;
 }
 
@@ -80,7 +86,8 @@ export function hotelDeepLinks(p: HotelSearchParams, hotelName?: string): DeepLi
 export function flightTitle(p: FlightSearchParams): string {
   const f = getAirport(p.from);
   const t = getAirport(p.to);
-  return `${f?.city ?? p.from} → ${t?.city ?? p.to}${p.returnDate ? ' 來回' : ' 單程'}`;
+  const base = `${f?.city ?? p.from} → ${t?.city ?? p.to}${p.returnDate ? ' 來回' : ' 單程'}`;
+  return p.carriers?.length ? `${base} · ${airlineSummary(p.carriers)}` : base;
 }
 
 export function hotelTitle(p: HotelSearchParams): string {

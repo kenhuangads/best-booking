@@ -93,6 +93,7 @@ export async function searchFlightsAmadeus(p: FlightSearchParams): Promise<Fligh
     infants: p.infants || undefined,
     travelClass: p.cabin,
     nonStop: p.nonStop ? 'true' : undefined,
+    includedAirlineCodes: p.carriers?.join(','),
     currencyCode: 'TWD',
     max: 50,
   });

@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import useSWR from 'swr';
+import { airlineSummary } from '@/lib/airlines';
 import { fetcher } from '@/lib/client';
 import { diffDays, fmtDate, fmtPrice, monthLabel, parseISO, todayISO, WEEKDAYS } from '@/lib/format';
 import { getHoliday } from '@/lib/holidays';
@@ -35,6 +36,7 @@ export function PriceCalendarSheet({
   const tripLength = params.returnDate ? diffDays(params.departDate, params.returnDate) : null;
   const qs = new URLSearchParams({ from: params.from, to: params.to, month, cabin: params.cabin });
   if (tripLength != null) qs.set('len', String(tripLength));
+  if (params.carriers?.length) qs.set('airlines', params.carriers.join(','));
   const { data, error, isLoading } = useSWR<CalendarResponse>(open ? `/api/search/calendar?${qs}` : null, fetcher, { revalidateOnFocus: false });
   const currentMonth = todayISO().slice(0, 7);
 
@@ -72,6 +74,7 @@ export function PriceCalendarSheet({
       </div>
       <p className="text-center text-xs text-gray-500">
         {params.from} → {params.to} · {tripLength != null ? `來回共 ${tripLength} 天` : '單程'} · 每位成人
+        {params.carriers?.length ? ` · ${airlineSummary(params.carriers)}` : ''}
       </p>
       {stats && (
         <p className="mt-1 text-center text-xs">

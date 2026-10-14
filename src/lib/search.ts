@@ -40,7 +40,7 @@ export async function searchFlights(p: FlightSearchParams, opts: SearchOptions =
   const links = flightDeepLinks(p);
   const offers = raw
     .filter((o) => !p.nonStop || o.itineraries.every((i) => i.stops === 0))
-    .filter((o) => !p.carrier || o.carriers.includes(p.carrier))
+    .filter((o) => !p.carriers?.length || o.carriers.every((c) => p.carriers!.includes(c)))
     .map((o) => ({ ...o, deepLinks: links }))
     .sort((a, b) => a.price - b.price);
   const res: SearchResponse<FlightOffer> = {
@@ -77,8 +77,15 @@ export async function searchHotels(p: HotelSearchParams, opts: SearchOptions = {
   return res;
 }
 
-export async function priceCalendar(from: string, to: string, month: string, tripLength: number | null, cabin: Cabin): Promise<CalendarResponse> {
-  const key = `c:${from}:${to}:${month}:${tripLength ?? ''}:${cabin}`;
+export async function priceCalendar(
+  from: string,
+  to: string,
+  month: string,
+  tripLength: number | null,
+  cabin: Cabin,
+  carriers?: string[],
+): Promise<CalendarResponse> {
+  const key = `c:${from}:${to}:${month}:${tripLength ?? ''}:${cabin}:${carriers?.join(',') ?? ''}`;
   const hit = getCached<CalendarResponse>(key, 10 * 60 * 1000);
   if (hit) return hit;
   const provider = env.flightProvider;
@@ -86,13 +93,16 @@ export async function priceCalendar(from: string, to: string, month: string, tri
   if (provider === 'amadeus') {
     try {
       const r = await priceCalendarAmadeus(from, to, month, tripLength);
-      res = { month, days: r.days, provider, tripLength, currency: r.currency, warnings: cabin !== 'ECONOMY' ? ['價格日曆僅提供經濟艙參考價'] : [] };
+      const warnings: string[] = [];
+      if (cabin !== 'ECONOMY') warnings.push('價格日曆僅提供經濟艙參考價');
+      if (carriers?.length) warnings.push('價格日曆無法依航空公司篩選，顯示的是所有航空公司的最低價');
+      res = { month, days: r.days, provider, tripLength, currency: r.currency, warnings };
     } catch (e) {
-      const days = await priceCalendarDemo(from, to, month, tripLength, cabin);
+      const days = await priceCalendarDemo(from, to, month, tripLength, cabin, carriers);
       res = { month, days, provider: 'demo', tripLength, currency: 'TWD', warnings: [`Amadeus 價格日曆暫無此航線資料（${errMsg(e)}），以下為示範估算`] };
     }
   } else {
-    const days = await priceCalendarDemo(from, to, month, tripLength, cabin);
+    const days = await priceCalendarDemo(from, to, month, tripLength, cabin, carriers);
     res = { month, days, provider, tripLength, currency: 'TWD', warnings: [DEMO_WARNING] };
   }
   setCached(key, res);

@@ -4,7 +4,7 @@
  * 並加入每 5 分鐘變動一次的「市場波動」，讓追蹤 / 通知功能能實際看到價格變化。
  * 所有結果以搜尋條件為種子決定，同樣條件會得到一致的航班組合。
  */
-import { AIRLINES, type AirlineTier } from '../airlines';
+import { AIRLINES, routeAirlineCodes, type AirlineTier } from '../airlines';
 import { getAirport, type Airport, type Region } from '../airports';
 import { getCity } from '../cities';
 import { addDays, diffDays, parseISO, todayISO } from '../format';
@@ -134,38 +134,6 @@ function farePerAdult(
 
 /* ───────────── 航空公司 / 轉機點 ───────────── */
 
-function routeAirlines(a: Airport, b: Airport): string[] {
-  if (a.region === '台灣' && b.region === '台灣') {
-    const remote = ['KYD', 'GNI'];
-    if (remote.includes(a.code) || remote.includes(b.code)) return ['DA'];
-    return ['B7', 'AE'];
-  }
-  const other = a.region === '台灣' ? b.region : a.region;
-  const tw = ['CI', 'BR', 'JX', 'IT'];
-  switch (other) {
-    case '日本':
-      return [...tw, 'JL', 'NH', 'MM', 'GK'];
-    case '韓國':
-      return [...tw, 'KE', 'OZ', 'LJ', '7C', 'TW'];
-    case '港澳':
-      return ['CI', 'BR', 'JX', 'CX', 'HX', 'UO', 'NX'];
-    case '中國大陸':
-      return ['CI', 'BR', 'JX', 'MU', 'CA', 'CZ', 'MF', '9C'];
-    case '東南亞':
-      return [...tw, 'TR', 'AK', 'VJ', 'TG', 'SQ', '5J', 'PR', 'MH', 'VN'];
-    case '歐洲':
-      return ['CI', 'BR', 'JX', 'CX', 'EK', 'QR', 'TK', 'KL', 'AF', 'LH', 'BA'];
-    case '美洲':
-      return ['CI', 'BR', 'JX', 'UA', 'DL', 'AA', 'CX', 'JL', 'NH', 'KE', 'AC'];
-    case '大洋洲':
-      return ['CI', 'BR', 'JX', 'CX', 'SQ', 'QF', 'NZ', 'UA'];
-    case '中東':
-      return ['EK', 'QR', 'EY', 'CI', 'BR', 'CX', 'TK'];
-    default:
-      return [...tw, 'CX', 'SQ'];
-  }
-}
-
 const HUB_BY_CARRIER: Record<string, string> = {
   CI: 'TPE', BR: 'TPE', JX: 'TPE', IT: 'TPE',
   CX: 'HKG', HX: 'HKG', UO: 'HKG', NX: 'MFM',
@@ -235,13 +203,14 @@ export function generateFlightOffers(p: FlightSearchParams): FlightOffer[] {
   if (!from || !to) throw new Error('不支援的機場代碼');
   const key = `${p.from}-${p.to}-${p.departDate}-${p.returnDate ?? ''}-${p.cabin}`;
   const rng = rngFor(key);
-  const carriers = routeAirlines(from, to);
+  const carriers = routeAirlineCodes(from.code, to.code);
   const km = distanceKm(from, to);
-  const n = 10 + Math.floor(rng() * 10);
+  // 每家常飛的航空公司至少產生一筆航班，指定航空公司搜尋時才不會查無結果
+  const n = Math.max(10 + Math.floor(rng() * 10), carriers.length + 4);
   const offers: FlightOffer[] = [];
 
   for (let i = 0; i < n; i++) {
-    const carrier = carriers[Math.floor(rng() * carriers.length)];
+    const carrier = i < carriers.length ? carriers[i] : carriers[Math.floor(rng() * carriers.length)];
     const airline = AIRLINES[carrier] ?? { name: carrier, tier: 'full' as const };
     let hub = pickHub(from, to, carrier);
     const wantsStop = rng() < (km < 1500 ? 0.2 : km < 4000 ? 0.45 : 0.7);
@@ -278,7 +247,14 @@ export async function searchFlightsDemo(p: FlightSearchParams): Promise<FlightOf
   return generateFlightOffers(p);
 }
 
-export async function priceCalendarDemo(from: string, to: string, month: string, tripLength: number | null, cabin: Cabin): Promise<CalendarDay[]> {
+export async function priceCalendarDemo(
+  from: string,
+  to: string,
+  month: string,
+  tripLength: number | null,
+  cabin: Cabin,
+  carriers?: string[],
+): Promise<CalendarDay[]> {
   const [y, m] = month.split('-').map(Number);
   const last = new Date(y, m, 0).getDate();
   const today = todayISO();
@@ -300,7 +276,8 @@ export async function priceCalendarDemo(from: string, to: string, month: string,
       cabin,
       nonStop: false,
     });
-    days.push({ date, price: offers[0]?.price ?? null });
+    const match = carriers?.length ? offers.find((o) => o.carriers.every((c) => carriers.includes(c))) : offers[0];
+    days.push({ date, price: match?.price ?? null });
   }
   await simulateLatency();
   return days;

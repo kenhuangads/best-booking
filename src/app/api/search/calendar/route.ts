@@ -19,8 +19,12 @@ export async function GET(req: NextRequest) {
   if (tripLength != null && (!Number.isInteger(tripLength) || tripLength < 0 || tripLength > 60)) return fail('len 須為 0–60 的整數');
   const cabinRaw = sp.get('cabin') ?? 'ECONOMY';
   const cabin: Cabin = (CABINS as string[]).includes(cabinRaw) ? (cabinRaw as Cabin) : 'ECONOMY';
+  const carriers = (sp.get('airlines') ?? '')
+    .split(',')
+    .map((s) => s.trim().toUpperCase())
+    .filter((s) => /^[A-Z0-9]{2}$/.test(s));
   try {
-    return ok(await priceCalendar(from, to, month, tripLength, cabin));
+    return ok(await priceCalendar(from, to, month, tripLength, cabin, carriers.length ? carriers : undefined));
   } catch (e) {
     return fail(errMsg(e), 502);
   }

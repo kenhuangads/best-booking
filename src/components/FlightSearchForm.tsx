@@ -2,11 +2,13 @@
 
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import { airlineSummary } from '@/lib/airlines';
 import { getAirport, POPULAR_FROM, POPULAR_TO, QUICK_ROUTES } from '@/lib/airports';
 import { loadLocal, saveLocal } from '@/lib/client';
 import { addDays, fmtDate, todayISO } from '@/lib/format';
 import { flightParamsToQuery } from '@/lib/schemas';
 import { CABIN_LABEL, type Cabin, type FlightSearchParams } from '@/lib/types';
+import { AirlinePicker } from './AirlinePicker';
 import { AirportPicker } from './AirportPicker';
 import { DatePicker } from './DatePicker';
 import { PaxPicker } from './PaxPicker';
@@ -24,13 +26,14 @@ interface FormState {
   infants: number;
   cabin: Cabin;
   nonStop: boolean;
+  carriers: string[];
 }
 
 const KEY = 'bb:flightForm';
 
 function defaults(): FormState {
   const dep = addDays(todayISO(), 21);
-  return { tripType: 'round', from: 'TPE', to: 'NRT', dep, ret: addDays(dep, 4), adults: 1, children: 0, infants: 0, cabin: 'ECONOMY', nonStop: false };
+  return { tripType: 'round', from: 'TPE', to: 'NRT', dep, ret: addDays(dep, 4), adults: 1, children: 0, infants: 0, cabin: 'ECONOMY', nonStop: false, carriers: [] };
 }
 
 function AirportValue({ code }: { code: string }) {
@@ -46,7 +49,7 @@ function AirportValue({ code }: { code: string }) {
 export function FlightSearchForm() {
   const router = useRouter();
   const [f, setF] = useState<FormState>(defaults);
-  const [sheet, setSheet] = useState<null | 'from' | 'to' | 'dates' | 'pax'>(null);
+  const [sheet, setSheet] = useState<null | 'from' | 'to' | 'dates' | 'pax' | 'airline'>(null);
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
@@ -78,6 +81,7 @@ export function FlightSearchForm() {
       infants: f.infants,
       cabin: f.cabin,
       nonStop: f.nonStop,
+      carriers: f.carriers.length ? f.carriers : undefined,
     };
     saveLocal(KEY, f);
     setSubmitting(true);
@@ -122,6 +126,9 @@ export function FlightSearchForm() {
           <FieldButton label="旅客 · 艙等" value={paxLabel} onClick={() => setSheet('pax')} />
         </div>
         <div className="border-t border-gray-200">
+          <FieldButton label="航空公司" value={f.carriers.length ? airlineSummary(f.carriers) : '不限'} onClick={() => setSheet('airline')} />
+        </div>
+        <div className="border-t border-gray-200">
           <Toggle checked={f.nonStop} onChange={(v) => update({ nonStop: v })} label="只看直飛" />
         </div>
       </div>
@@ -163,6 +170,14 @@ export function FlightSearchForm() {
         onClose={() => setSheet(null)}
         value={{ adults: f.adults, children: f.children, infants: f.infants, cabin: f.cabin }}
         onChange={(v) => update(v)}
+      />
+      <AirlinePicker
+        open={sheet === 'airline'}
+        onClose={() => setSheet(null)}
+        from={f.from}
+        to={f.to}
+        value={f.carriers}
+        onChange={(carriers) => update({ carriers })}
       />
     </div>
   );

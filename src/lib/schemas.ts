@@ -17,7 +17,14 @@ export const flightParamsSchema = z
     infants: z.coerce.number().int().min(0).max(4).default(0),
     cabin: z.enum(['ECONOMY', 'PREMIUM_ECONOMY', 'BUSINESS', 'FIRST']).default('ECONOMY'),
     nonStop: bool.default(false),
-    carrier: z.string().trim().toUpperCase().regex(/^[A-Z0-9]{2}$/, '航空公司代碼須為 2 碼').optional(),
+    carriers: z.preprocess(
+      (v) => (typeof v === 'string' ? v.split(',').map((s) => s.trim()).filter(Boolean) : v),
+      z
+        .array(z.string().trim().toUpperCase().regex(/^[A-Z0-9]{2}$/, '航空公司代碼須為 2 碼'))
+        .max(10, '最多指定 10 家航空公司')
+        .optional()
+        .transform((a) => (a && a.length ? [...new Set(a)] : undefined)),
+    ),
   })
   .superRefine((d, ctx) => {
     if (d.from === d.to) ctx.addIssue({ code: 'custom', message: '出發地與目的地不可相同' });
@@ -86,7 +93,7 @@ export function parseFlightQuery(sp: Source): Parsed<FlightSearchParams> {
     infants: g('infants'),
     cabin: g('cabin'),
     nonStop: g('nonstop') ?? g('nonStop'),
-    carrier: g('carrier'),
+    carriers: g('airlines') ?? g('carriers') ?? g('carrier'),
   });
   return r.success ? { ok: true, value: r.data } : { ok: false, error: issues(r.error) };
 }
@@ -117,7 +124,7 @@ export function flightParamsToQuery(p: FlightSearchParams): string {
     nonstop: p.nonStop ? '1' : '0',
   });
   if (p.returnDate) sp.set('ret', p.returnDate);
-  if (p.carrier) sp.set('carrier', p.carrier);
+  if (p.carriers?.length) sp.set('airlines', p.carriers.join(','));
   return sp.toString();
 }
 
