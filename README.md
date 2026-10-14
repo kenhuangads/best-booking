@@ -56,6 +56,7 @@ npm run dev
 | `TURSO_DATABASE_URL` / `TURSO_AUTH_TOKEN` | Turso 雲端資料庫（設定後優先於 SQLite；Vercel 必要） |
 | `FLIGHT_PROVIDER` / `HOTEL_PROVIDER` | `auto`（預設）/ `demo` / `serpapi` / `amadeus` |
 | `SERPAPI_KEY` | SerpApi 金鑰，設定後改用 Google 航班 / Google 飯店即時價格 |
+| `TRAVELPAYOUTS_TOKEN` / `TRAVELPAYOUTS_MARKETS` / `TRAVELPAYOUTS_MARKER` | Travelpayouts token（免費）；設定後機票追蹤與價格日曆改用 Aviasales 快取價格當雷達 |
 | `AMADEUS_CLIENT_ID` / `AMADEUS_CLIENT_SECRET` / `AMADEUS_ENV` | 僅限已有 Amadeus 企業版者；Self-Service 已於 2026/7/17 關閉 |
 | `LINE_CHANNEL_ACCESS_TOKEN` / `LINE_CHANNEL_SECRET` / `LINE_BOT_BASIC_ID` | LINE Messaging API 設定 |
 | `TELEGRAM_BOT_TOKEN` / `TELEGRAM_BOT_USERNAME` / `TELEGRAM_POLLING` / `TELEGRAM_WEBHOOK_SECRET` | Telegram Bot 設定 |
@@ -81,22 +82,32 @@ npm run dev
 3. Vercel 等無伺服器環境：設定 `TELEGRAM_WEBHOOK_SECRET=任意字串`，部署後到「設定 → Telegram → 設定 Telegram Webhook 指向本站」按一次即可（等同呼叫 Telegram 的 setWebhook）。
 4. 「設定 → 連結 Telegram」會產生 `t.me/<bot>?start=連結碼` 一鍵連結。
 
-## 使用真實價格（SerpApi）
+## 使用真實價格：SerpApi + Travelpayouts 各做擅長的事
 
-Amadeus 的免費 Self-Service API 已於 2026 年 7 月 17 日關閉，現在改用 [SerpApi](https://serpapi.com) 抓 Google 航班與 Google 飯店的即時價格（台幣）。
+Amadeus 的免費 Self-Service API 已於 2026 年 7 月 17 日關閉。目前的做法是兩個免費來源搭配：
 
-1. 到 serpapi.com 註冊，登入後在 Dashboard 複製 **Your Private API Key**。
-2. 在 Vercel 專案的 Environment Variables 新增 `SERPAPI_KEY`，然後 Redeploy。
-3. 打開 App 的「設定」頁，機票與住宿顯示「Google 即時價格（SerpApi）」就完成了。
+| 工作 | 來源 | 原因 |
+| --- | --- | --- |
+| 搜尋結果頁、住宿、價格確認 | [SerpApi](https://serpapi.com)（Google 航班 / Google 飯店） | 真正的即時價，但免費方案每月只有約 100 次 |
+| 機票追蹤盯價、價格日曆 | [Travelpayouts](https://www.travelpayouts.com)（Aviasales 快取） | 免費、每分鐘 600 次，但是過去 48 小時別人查到的價格 |
 
-注意事項：
+追蹤流程：Travelpayouts 每隔幾分鐘盯價，發現價格低於目標或明顯下跌，App 才花一次 SerpApi 向 Google 確認，確認是真的才通知。免費額度幾乎不會用完，通知也不會是假的。
 
-- 免費方案每月約 100 次搜尋，每次搜尋與每次追蹤檢查都算一次；相同條件 1 小時內重複查詢走 SerpApi 快取，不扣額度。
-- 免費額度下建議追蹤頻率設 12 小時或每天，建立追蹤時預設就是 12 小時。
+### 設定步驟
+
+1. **SerpApi**：到 serpapi.com 註冊，登入後在 Dashboard 複製 **Your Private API Key**，在 Vercel 新增 `SERPAPI_KEY`。
+2. **Travelpayouts**：到 travelpayouts.com 註冊（選一般合作夥伴即可，不需要網站），登入後到個人資料頁的 **API token** 複製，在 Vercel 新增 `TRAVELPAYOUTS_TOKEN`。
+3. Redeploy 後打開 App 的「設定」頁：機票顯示「Google 即時價格」、機票盯價雷達顯示「Aviasales 快取價格」就完成了。
+
+### 注意事項
+
+- 只設 SerpApi：追蹤每次檢查都耗額度，建立追蹤時預設改為 12 小時一次，且不提供價格日曆。
+- 只設 Travelpayouts：搜尋結果也是快取價格（單程每天只會有一筆最低價），到達時間為估計。
+- Aviasales 的快取依「市場」分，台灣出發的航線沒有專屬市場，App 會依序嘗試美國站與俄國站（`TRAVELPAYOUTS_MARKETS`）。熱門航線多半有資料，台灣國內線與冷門航線常常是空的，這時追蹤會每 12 小時改用 SerpApi 查一次。
+- Travelpayouts 以美元計價，App 會用當天匯率換算成台幣（匯率來源 open.er-api.com，失敗時以 1 美元 = 32 元估算）。
 - Google 航班的來回票只提供去程班次與來回總價，回程班次需在預訂網站選擇。
-- 此模式不提供價格日曆（每天各查一次會很快用完額度）。
 
-> 想接其他來源（例如 Ignav、Travelpayouts），只要在 `src/lib/providers/` 新增一個回傳 `FlightOffer[]` / `HotelOffer[]` 的模組，並在 `src/lib/search.ts` 掛上即可。
+> 想接其他來源（例如 Ignav），只要在 `src/lib/providers/` 新增一個回傳 `FlightOffer[]` / `HotelOffer[]` 的模組，並在 `src/lib/search.ts` 掛上即可。
 
 ## 排程與通知邏輯
 
@@ -132,7 +143,7 @@ src/
     airports.ts        機場資料（台灣視角分區、中文名、別名搜尋）
     cities.ts          住宿目的地（含台灣熱門景點）
     holidays.ts        台灣國定假日與連假（2026 正式、2027 預估）
-    providers/         demo（示範資料）、serpapi（Google 即時價格）、amadeus（企業版）
+    providers/         demo（示範資料）、serpapi（Google 即時價格）、travelpayouts（Aviasales 快取雷達）、amadeus（企業版）
     search.ts          供應商選擇、快取、深連結
     watcher.ts         追蹤檢查與通知判斷
     scheduler.ts       內建排程與 Telegram 輪詢（常駐環境）

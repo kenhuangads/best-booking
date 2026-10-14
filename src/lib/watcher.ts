@@ -1,10 +1,10 @@
-import { errMsg } from './env';
+import { env, errMsg } from './env';
 import { fmtPrice } from './format';
 import { notifyAll } from './notify';
 import { buildWatchPayload, payloadText } from './notify/messages';
 import { addPricePoint, createAlert, listWatches, updateWatch } from './repo';
 import { offerPrice, searchFlights, searchHotels } from './search';
-import type { ChannelResult, Offer, Watch } from './types';
+import type { ChannelResult, FlightWatch, Offer, Watch } from './types';
 
 export interface CheckOutcome {
   id: string;
@@ -18,15 +18,65 @@ export interface CheckOutcome {
 
 /** 價格持續達標時，每 24 小時最多再提醒一次 */
 const REMIND_AFTER_MS = 24 * 60 * 60 * 1000;
+/** 雷達查不到這條航線時，改用主要來源查價的最短間隔 */
+const FALLBACK_INTERVAL_MS = 12 * 60 * 60 * 1000;
+
+interface Picked {
+  offer: Offer | undefined;
+  notes: string[];
+  skip?: string;
+}
+
+/**
+ * 機票：有 Travelpayouts 時先用免費的快取價格當雷達，
+ * 只有看起來達標 / 降價時才花一次 SerpApi 向 Google 確認。
+ */
+async function pickFlightOffer(w: FlightWatch, force: boolean): Promise<Picked> {
+  const radar = env.radarProvider;
+  const confirm = env.flightProvider;
+  if (radar === confirm) {
+    return { offer: (await searchFlights(w.params, { bypassCache: force })).offers[0], notes: [] };
+  }
+
+  const radarOffer = (await searchFlights(w.params, { bypassCache: force, provider: radar })).offers[0];
+  if (!radarOffer) {
+    const lastAt = w.history.at(-1)?.checkedAt;
+    if (!lastAt || Date.now() - Date.parse(lastAt) > FALLBACK_INTERVAL_MS) {
+      return { offer: (await searchFlights(w.params, { bypassCache: true })).offers[0], notes: [] };
+    }
+    return { offer: undefined, notes: [], skip: '快取暫無此航線價格，每 12 小時改用主要來源查一次' };
+  }
+
+  const rp = radarOffer.price;
+  const looksGood =
+    (w.targetPrice != null && rp <= w.targetPrice) ||
+    (w.notifyOnDrop && w.lastPrice != null && rp <= w.lastPrice * (1 - w.dropPercent / 100)) ||
+    (w.notifyOnDrop && w.lowestPrice != null && rp < w.lowestPrice);
+  if (!looksGood) return { offer: radarOffer, notes: [] };
+
+  try {
+    const confirmed = (await searchFlights(w.params, { bypassCache: true })).offers[0];
+    if (confirmed) return { offer: confirmed, notes: [] };
+    return { offer: radarOffer, notes: ['主要來源查無此航班，以下為 Aviasales 快取價格'] };
+  } catch (e) {
+    return { offer: radarOffer, notes: [`價格確認失敗（${errMsg(e)}），以下為 Aviasales 快取價格`] };
+  }
+}
 
 export async function checkWatch(w: Watch, opts: { force?: boolean } = {}): Promise<CheckOutcome> {
   const now = new Date().toISOString();
   const outcome: CheckOutcome = { id: w.id, title: w.title, price: null, notified: false, reason: null, error: null, channels: [] };
   try {
-    let offer: Offer | undefined;
-    if (w.type === 'flight') offer = (await searchFlights(w.params, { bypassCache: opts.force })).offers[0];
-    else offer = (await searchHotels(w.params, { bypassCache: opts.force })).offers[0];
+    let picked: Picked;
+    if (w.type === 'flight') picked = await pickFlightOffer(w, !!opts.force);
+    else picked = { offer: (await searchHotels(w.params, { bypassCache: opts.force })).offers[0], notes: [] };
 
+    if (picked.skip) {
+      await updateWatch(w.id, { lastCheckedAt: now, lastError: picked.skip });
+      outcome.error = picked.skip;
+      return outcome;
+    }
+    const offer = picked.offer;
     if (!offer) {
       await updateWatch(w.id, { lastCheckedAt: now, lastError: '查無報價' });
       outcome.error = '查無報價';
@@ -58,6 +108,8 @@ export async function checkWatch(w: Watch, opts: { force?: boolean } = {}): Prom
     if (shouldNotify) {
       const reason = reasons.join('\n');
       const payload = buildWatchPayload(w, offer, price, reason);
+      payload.lines.push(...picked.notes);
+      if (offer.source === 'travelpayouts' && !picked.notes.length) payload.lines.push('此為 Aviasales 快取價格，請以訂票網站為準');
       const channels = await notifyAll(payload);
       await createAlert({ watchId: w.id, title: payload.title, body: payloadText(payload), price, url: payload.url, channels });
       outcome.notified = true;
@@ -85,7 +137,6 @@ export async function checkWatch(w: Watch, opts: { force?: boolean } = {}): Prom
   return outcome;
 }
 
-/** 排程觸發時間會有幾秒誤差，保留一點緩衝，避免 5 分鐘的追蹤被拖成 10 分鐘才檢查 */
 export function isDue(w: Watch, now = Date.now()): boolean {
   if (!w.active) return false;
   if (!w.lastCheckedAt) return true;

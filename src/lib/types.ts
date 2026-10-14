@@ -31,7 +31,7 @@ export interface HotelSearchParams {
   hotelName?: string;
 }
 
-export type ProviderName = 'demo' | 'amadeus' | 'serpapi';
+export type ProviderName = 'demo' | 'amadeus' | 'serpapi' | 'travelpayouts';
 
 export type DeepLinkKind = 'google' | 'skyscanner' | 'trip' | 'airline' | 'agoda' | 'booking' | 'other';
 export interface DeepLink {
@@ -73,6 +73,8 @@ export interface FlightOffer {
   baggageIncluded?: boolean;
   /** 來回票只拿到去程班次（價格是來回總價，回程要到預訂網站選） */
   returnPending?: boolean;
+  /** 快取價格：時間為估計、價格可能已變動 */
+  approximate?: boolean;
   source: ProviderName;
   deepLinks: DeepLink[];
 }
@@ -198,7 +200,7 @@ export interface AlertRecord {
 }
 
 export interface StatusResponse {
-  providers: { flight: ProviderName; hotel: ProviderName; amadeusEnv: 'test' | 'production' | null };
+  providers: { flight: ProviderName; hotel: ProviderName; radar: ProviderName; amadeusEnv: 'test' | 'production' | null };
   line: { configured: boolean; basicId: string | null; addFriendUrl: string | null };
   telegram: { configured: boolean; username: string | null; polling: boolean };
   scheduler: {

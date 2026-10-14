@@ -27,6 +27,9 @@ export function WatchCard({ w, onChanged }: { w: Watch; onChanged: () => void })
   const searchHref = `/search?${w.type === 'flight' ? flightParamsToQuery(w.params) : hotelParamsToQuery(w.params)}`;
   const bookUrl = w.lastResult?.deepLinks[0]?.url;
   const currency = w.lastResult?.currency ?? 'TWD';
+  const sourceLabel = w.lastResult
+    ? { serpapi: 'Google 確認', travelpayouts: '快取價', amadeus: 'Amadeus', demo: '示範' }[w.lastResult.source]
+    : null;
 
   const run = async (kind: Busy, fn: () => Promise<unknown>) => {
     setBusy(kind);
@@ -70,7 +73,9 @@ export function WatchCard({ w, onChanged }: { w: Watch; onChanged: () => void })
 
       <div className="mt-3 flex items-end justify-between">
         <div>
-          <div className="text-[11px] text-gray-500">目前最低</div>
+          <div className="text-[11px] text-gray-500">
+            目前最低{sourceLabel && <span className="ml-1 rounded bg-gray-100 px-1 py-0.5 text-[10px] text-gray-500">{sourceLabel}</span>}
+          </div>
           <div className="text-2xl font-bold leading-tight">{fmtPrice(price, currency)}</div>
           <div className="mt-0.5 text-[11px] text-gray-500">
             {w.lowestPrice != null ? `歷史最低 ${fmtPrice(w.lowestPrice, currency)}` : ''}

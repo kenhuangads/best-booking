@@ -2,7 +2,7 @@ import { ok } from '@/lib/api';
 import { getDb } from '@/lib/db';
 import { env, errMsg } from '@/lib/env';
 import { schedulerStatus } from '@/lib/scheduler';
-import { calendarSupported } from '@/lib/search';
+import { calendarProvider } from '@/lib/search';
 import type { StatusResponse } from '@/lib/types';
 
 export const dynamic = 'force-dynamic';
@@ -24,6 +24,7 @@ export async function GET() {
     providers: {
       flight: env.flightProvider,
       hotel: env.hotelProvider,
+      radar: env.radarProvider,
       amadeusEnv: env.amadeus.configured ? (env.amadeus.production ? 'production' : 'test') : null,
     },
     line: { configured: env.line.configured, basicId: env.line.basicId, addFriendUrl: env.line.addFriendUrl },
@@ -33,7 +34,7 @@ export async function GET() {
     serverless: env.isServerless,
     appUrl: env.appUrl,
     passwordProtected: !!env.appPassword,
-    features: { calendar: calendarSupported() },
+    features: { calendar: calendarProvider() !== null },
   };
   return ok(body);
 }

@@ -41,12 +41,15 @@ export function CreateWatchSheet({ open, onClose, type, params, currentPrice, cu
   const [intervalMin, setIntervalMin] = useState(60);
   const [saving, setSaving] = useState(false);
   const { data: status } = useSWR<StatusResponse>('/api/status', fetcher, { revalidateOnFocus: false });
-  // SerpApi 免費額度少，預設改成 12 小時檢查一次
-  const quotaLimited = (type === 'flight' ? status?.providers.flight : status?.providers.hotel) === 'serpapi';
+  // 每次檢查用的來源：機票有雷達就用雷達（免費），否則用主要來源
+  const checkProvider = type === 'flight' ? status?.providers.radar : status?.providers.hotel;
+  // SerpApi 免費額度少，預設改成 12 小時檢查一次；雷達免費，預設 30 分鐘
+  const quotaLimited = checkProvider === 'serpapi';
+  const radar = checkProvider === 'travelpayouts';
 
   useEffect(() => {
-    if (open) setIntervalMin(quotaLimited ? 720 : 60);
-  }, [open, quotaLimited]);
+    if (open) setIntervalMin(quotaLimited ? 720 : radar ? 30 : 60);
+  }, [open, quotaLimited, radar]);
 
   useEffect(() => {
     if (!open) return;
@@ -159,7 +162,9 @@ export function CreateWatchSheet({ open, onClose, type, params, currentPrice, cu
         <p className="mt-1.5 text-[11px] text-gray-400">
           {quotaLimited
             ? 'SerpApi 免費方案每月約 100 次搜尋，每次檢查算一次，建議 12 小時或每天檢查。'
-            : '使用真實價格 API 時，頻率越高消耗的查詢額度越多。'}
+            : radar
+              ? '盯價用免費的 Aviasales 快取價格，不耗額度；發現低價時才向 Google 確認一次。'
+              : '使用真實價格 API 時，頻率越高消耗的查詢額度越多。'}
         </p>
       </div>
 

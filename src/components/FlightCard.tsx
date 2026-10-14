@@ -31,7 +31,7 @@ export function ItineraryRow({ it, label }: { it: Itinerary; label?: string }) {
         <div className="relative my-1 h-px bg-gray-300">
           {it.stops > 0 && <span className="absolute left-1/2 top-1/2 h-2 w-2 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-orange-400 bg-white" />}
         </div>
-        <div className={`text-[11px] ${it.stops ? 'text-orange-600' : 'text-emerald-600'}`}>{it.stops ? `轉機 ${it.stops} 次 · ${via}` : '直飛'}</div>
+        <div className={`text-[11px] ${it.stops ? 'text-orange-600' : 'text-emerald-600'}`}>{it.stops ? `轉機 ${it.stops} 次${via ? ` · ${via}` : ''}` : '直飛'}</div>
       </div>
       <div className="w-14 shrink-0 text-right">
         <div className="text-lg font-semibold leading-tight tabular-nums">
@@ -62,6 +62,7 @@ export function FlightCard({ offer, best, onClick }: { offer: FlightOffer; best?
         ))}
       </div>
       {offer.returnPending && <div className="mt-2 text-[11px] text-gray-500">價格為來回總價，回程班次請在預訂網站選擇</div>}
+      {offer.approximate && <div className="mt-2 text-[11px] text-gray-500">48 小時內查到的價格，到達時間為估計</div>}
       <div className="mt-3 flex items-end justify-between border-t border-gray-100 pt-3">
         <div className="flex flex-wrap gap-1.5">
           {offer.baggageIncluded === true && <Tag>含託運行李</Tag>}

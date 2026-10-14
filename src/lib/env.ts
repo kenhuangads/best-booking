@@ -7,9 +7,10 @@ function str(name: string, fallback = ''): string {
   return v == null || v === '' ? fallback : v;
 }
 
-function resolveProvider(setting: string, has: { serpapi: boolean; amadeus: boolean }): ProviderName {
-  if (setting === 'serpapi' || setting === 'amadeus' || setting === 'demo') return setting;
+function resolveProvider(setting: string, has: { serpapi: boolean; travelpayouts: boolean; amadeus: boolean }): ProviderName {
+  if (setting === 'serpapi' || setting === 'travelpayouts' || setting === 'amadeus' || setting === 'demo') return setting;
   if (has.serpapi) return 'serpapi';
+  if (has.travelpayouts) return 'travelpayouts';
   if (has.amadeus) return 'amadeus';
   return 'demo';
 }
@@ -56,11 +57,38 @@ export const env = {
     const key = str('SERPAPI_KEY');
     return { key, configured: !!key, endpoint: str('SERPAPI_ENDPOINT', 'https://serpapi.com/search.json') };
   },
+  /** Travelpayouts（Aviasales 快取價格）：免費、額度大，當追蹤用的價格雷達 */
+  get travelpayouts() {
+    const token = str('TRAVELPAYOUTS_TOKEN');
+    const markets = str('TRAVELPAYOUTS_MARKETS', 'us,ru')
+      .split(',')
+      .map((s) => s.trim().toLowerCase())
+      .filter(Boolean);
+    return {
+      token,
+      configured: !!token,
+      markets: markets.length ? markets : ['us', 'ru'],
+      marker: str('TRAVELPAYOUTS_MARKER'),
+      currency: str('TRAVELPAYOUTS_CURRENCY', 'usd').toLowerCase(),
+      endpoint: str('TRAVELPAYOUTS_ENDPOINT', 'https://api.travelpayouts.com/aviasales/v3'),
+    };
+  },
+  /** 搜尋結果頁與價格確認用的機票來源 */
   get flightProvider(): ProviderName {
-    return resolveProvider(str('FLIGHT_PROVIDER', 'auto'), { serpapi: this.serpapi.configured, amadeus: this.amadeus.configured });
+    return resolveProvider(str('FLIGHT_PROVIDER', 'auto'), {
+      serpapi: this.serpapi.configured,
+      travelpayouts: this.travelpayouts.configured,
+      amadeus: this.amadeus.configured,
+    });
+  },
+  /** 追蹤時頻繁查價用的來源：有 Travelpayouts 就用它，低於目標再用 flightProvider 確認 */
+  get radarProvider(): ProviderName {
+    const setting = str('RADAR_PROVIDER', 'auto');
+    if (setting !== 'auto') return resolveProvider(setting, { serpapi: false, travelpayouts: false, amadeus: false });
+    return this.travelpayouts.configured ? 'travelpayouts' : this.flightProvider;
   },
   get hotelProvider(): ProviderName {
-    return resolveProvider(str('HOTEL_PROVIDER', 'auto'), { serpapi: this.serpapi.configured, amadeus: this.amadeus.configured });
+    return resolveProvider(str('HOTEL_PROVIDER', 'auto'), { serpapi: this.serpapi.configured, travelpayouts: false, amadeus: this.amadeus.configured });
   },
   get line() {
     const token = str('LINE_CHANNEL_ACCESS_TOKEN');

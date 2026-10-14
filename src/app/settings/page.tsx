@@ -165,7 +165,20 @@ export default function SettingsPage() {
           <h2 className="mb-2 px-1 text-xs font-semibold text-gray-500">資料來源與資料庫</h2>
           <Card className="divide-y divide-gray-100">
             <Row label="機票" value={providerText(status?.providers.flight, status?.providers.amadeusEnv)} />
+            <Row label="機票盯價雷達" value={providerText(status?.providers.radar, status?.providers.amadeusEnv)} />
             <Row label="住宿" value={providerText(status?.providers.hotel, status?.providers.amadeusEnv)} />
+            {status && status.providers.radar === 'travelpayouts' && status.providers.flight === 'serpapi' && (
+              <p className="px-4 py-3 text-xs leading-relaxed text-gray-500">
+                追蹤時先用免費的 Aviasales 快取價格盯價，看起來低於目標才花一次 SerpApi 向 Google 確認，確認是真的才通知。搜尋頁與價格確認用
+                SerpApi，價格日曆用 Travelpayouts。
+              </p>
+            )}
+            {status && status.providers.radar !== 'travelpayouts' && status.providers.flight === 'serpapi' && (
+              <p className="px-4 py-3 text-xs leading-relaxed text-gray-500">
+                想免費高頻盯價：到 <span className="font-medium text-gray-700">travelpayouts.com</span> 註冊，在個人資料頁複製 API token，設定
+                TRAVELPAYOUTS_TOKEN 後 Redeploy。之後追蹤會先用它盯價，只在發現低價時才用 SerpApi 確認。
+              </p>
+            )}
             <Row
               label="資料庫"
               value={status ? (status.db.backend === 'turso' ? 'Turso 雲端資料庫' : status.db.persistent ? 'SQLite（本機檔案）' : 'SQLite 暫存檔') : '—'}
@@ -186,8 +199,8 @@ export default function SettingsPage() {
             )}
             {status && (status.providers.flight === 'serpapi' || status.providers.hotel === 'serpapi') && (
               <p className="px-4 py-3 text-xs leading-relaxed text-gray-500">
-                SerpApi 免費方案每月約 100 次搜尋，每次搜尋和每次追蹤檢查都算一次；相同條件 1 小時內重複查詢不扣額度。追蹤頻率建議設 12
-                小時或每天。此模式不提供價格日曆。
+                SerpApi 免費方案每月約 100 次搜尋，每次搜尋、住宿追蹤檢查和價格確認都算一次；相同條件 1 小時內重複查詢不扣額度。
+                {status.providers.radar === 'travelpayouts' ? '機票追蹤由雷達負責，不耗額度。' : '沒有雷達時，機票追蹤頻率建議設 12 小時或每天。'}
               </p>
             )}
           </Card>
@@ -245,6 +258,7 @@ function providerText(p?: ProviderName, env?: 'test' | 'production' | null): str
   if (!p) return '—';
   if (p === 'demo') return '示範資料（模擬）';
   if (p === 'serpapi') return 'Google 即時價格（SerpApi）';
+  if (p === 'travelpayouts') return 'Aviasales 快取價格（Travelpayouts）';
   return env === 'production' ? 'Amadeus 正式環境' : 'Amadeus 測試環境';
 }
 

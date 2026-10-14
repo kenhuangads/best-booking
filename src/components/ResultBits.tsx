@@ -77,7 +77,7 @@ export function ErrorBox({ message, onRetry }: { message: string; onRetry?: () =
 }
 
 export function providerLabel(p: ProviderName): string {
-  return { serpapi: 'Google 即時價格', amadeus: 'Amadeus 報價', demo: '示範資料（模擬）' }[p];
+  return { serpapi: 'Google 即時價格', travelpayouts: 'Aviasales 48 小時內查到的價格', amadeus: 'Amadeus 報價', demo: '示範資料（模擬）' }[p];
 }
 
 export function Footnote({ provider, fetchedAt, cached, warnings }: { provider: ProviderName; fetchedAt: string; cached: boolean; warnings: string[] }) {

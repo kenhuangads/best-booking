@@ -59,6 +59,7 @@ export function FlightDetailSheet({
               {offer.seatsLeft != null && offer.seatsLeft <= 9 ? ` · 剩 ${offer.seatsLeft} 位` : ''}
             </div>
             {offer.returnPending && <div className="mt-1 text-xs text-gray-500">這是來回總價，回程班次請在預訂網站選擇</div>}
+            {offer.approximate && <div className="mt-1 text-xs text-gray-500">Aviasales 過去 48 小時查到的價格，可能已變動；到達時間為估計</div>}
           </div>
 
           {offer.itineraries.map((it, i) => (
