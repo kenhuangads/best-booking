@@ -1,6 +1,14 @@
 import type { Metadata, Viewport } from 'next';
+import Script from 'next/script';
 import './globals.css';
 import { AppShell } from '@/components/AppShell';
+
+/** Travelpayouts 註冊精靈要求安裝的 Drive 腳本（聯盟行銷用）；設定 TRAVELPAYOUTS_DRIVE_ID 才載入 */
+function travelpayoutsDriveSrc(): string | null {
+  const id = (process.env.TRAVELPAYOUTS_DRIVE_ID ?? '').trim();
+  if (!/^\d{1,12}$/.test(id)) return null;
+  return `https://emrldtp.com/${Buffer.from(id).toString('base64')}.js?t=${id}`;
+}
 
 export const metadata: Metadata = {
   title: { default: '旅行預訂神器', template: '%s · 旅行預訂神器' },
@@ -22,10 +30,12 @@ export const viewport: Viewport = {
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
+  const driveSrc = travelpayoutsDriveSrc();
   return (
     <html lang="zh-Hant-TW">
       <body>
         <AppShell>{children}</AppShell>
+        {driveSrc && <Script id="travelpayouts-drive" src={driveSrc} strategy="afterInteractive" data-cmp-ab="2" />}
       </body>
     </html>
   );

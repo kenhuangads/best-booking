@@ -56,7 +56,7 @@ npm run dev
 | `TURSO_DATABASE_URL` / `TURSO_AUTH_TOKEN` | Turso 雲端資料庫（設定後優先於 SQLite；Vercel 必要） |
 | `FLIGHT_PROVIDER` / `HOTEL_PROVIDER` | `auto`（預設）/ `demo` / `serpapi` / `amadeus` |
 | `SERPAPI_KEY` | SerpApi 金鑰，設定後改用 Google 航班 / Google 飯店即時價格 |
-| `TRAVELPAYOUTS_TOKEN` / `TRAVELPAYOUTS_MARKETS` / `TRAVELPAYOUTS_MARKER` | Travelpayouts token（免費）；設定後機票追蹤與價格日曆改用 Aviasales 快取價格當雷達 |
+| `TRAVELPAYOUTS_TOKEN` / `TRAVELPAYOUTS_MARKETS` / `TRAVELPAYOUTS_MARKER` / `TRAVELPAYOUTS_DRIVE_ID` | Travelpayouts token（免費）；設定後機票追蹤與價格日曆改用 Aviasales 快取價格當雷達 |
 | `AMADEUS_CLIENT_ID` / `AMADEUS_CLIENT_SECRET` / `AMADEUS_ENV` | 僅限已有 Amadeus 企業版者；Self-Service 已於 2026/7/17 關閉 |
 | `LINE_CHANNEL_ACCESS_TOKEN` / `LINE_CHANNEL_SECRET` / `LINE_BOT_BASIC_ID` | LINE Messaging API 設定 |
 | `TELEGRAM_BOT_TOKEN` / `TELEGRAM_BOT_USERNAME` / `TELEGRAM_POLLING` / `TELEGRAM_WEBHOOK_SECRET` | Telegram Bot 設定 |
@@ -96,7 +96,7 @@ Amadeus 的免費 Self-Service API 已於 2026 年 7 月 17 日關閉。目前�
 ### 設定步驟
 
 1. **SerpApi**：到 serpapi.com 註冊，登入後在 Dashboard 複製 **Your Private API Key**，在 Vercel 新增 `SERPAPI_KEY`。
-2. **Travelpayouts**：到 travelpayouts.com 註冊（選一般合作夥伴即可，不需要網站），登入後到個人資料頁的 **API token** 複製，在 Vercel 新增 `TRAVELPAYOUTS_TOKEN`。
+2. **Travelpayouts**：到 travelpayouts.com 註冊，主要頻道填你的 App 網址（GitHub 網址會被拒絕）。註冊精靈會強制要求安裝 Drive 腳本才放行：把它給的程式碼裡 `?t=` 後面的數字填到 Vercel 的 `TRAVELPAYOUTS_DRIVE_ID`，Redeploy 後用瀏覽器開一次 App，再按精靈的 Check Drive connection。通過後到個人資料頁的 **API token** 複製，在 Vercel 新增 `TRAVELPAYOUTS_TOKEN`（之後 `TRAVELPAYOUTS_DRIVE_ID` 可移除）。
 3. Redeploy 後打開 App 的「設定」頁：機票顯示「Google 即時價格」、機票盯價雷達顯示「Aviasales 快取價格」就完成了。
 
 ### 注意事項
