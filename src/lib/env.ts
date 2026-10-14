@@ -7,10 +7,11 @@ function str(name: string, fallback = ''): string {
   return v == null || v === '' ? fallback : v;
 }
 
-function resolveProvider(setting: string, hasAmadeus: boolean): ProviderName {
-  if (setting === 'amadeus') return 'amadeus';
-  if (setting === 'demo') return 'demo';
-  return hasAmadeus ? 'amadeus' : 'demo';
+function resolveProvider(setting: string, has: { serpapi: boolean; amadeus: boolean }): ProviderName {
+  if (setting === 'serpapi' || setting === 'amadeus' || setting === 'demo') return setting;
+  if (has.serpapi) return 'serpapi';
+  if (has.amadeus) return 'amadeus';
+  return 'demo';
 }
 
 export const env = {
@@ -50,11 +51,16 @@ export const env = {
       production: str('AMADEUS_ENV', 'test') === 'production',
     };
   },
+  /** SerpApi：Google 航班 / Google 飯店即時價格 */
+  get serpapi() {
+    const key = str('SERPAPI_KEY');
+    return { key, configured: !!key, endpoint: str('SERPAPI_ENDPOINT', 'https://serpapi.com/search.json') };
+  },
   get flightProvider(): ProviderName {
-    return resolveProvider(str('FLIGHT_PROVIDER', 'auto'), this.amadeus.configured);
+    return resolveProvider(str('FLIGHT_PROVIDER', 'auto'), { serpapi: this.serpapi.configured, amadeus: this.amadeus.configured });
   },
   get hotelProvider(): ProviderName {
-    return resolveProvider(str('HOTEL_PROVIDER', 'auto'), this.amadeus.configured);
+    return resolveProvider(str('HOTEL_PROVIDER', 'auto'), { serpapi: this.serpapi.configured, amadeus: this.amadeus.configured });
   },
   get line() {
     const token = str('LINE_CHANNEL_ACCESS_TOKEN');

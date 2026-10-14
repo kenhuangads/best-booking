@@ -6,7 +6,7 @@ import { toast } from '@/components/Toast';
 import { Card, PageHeader, PrimaryButton, Toggle } from '@/components/ui';
 import { api, errText, fetcher } from '@/lib/client';
 import { relTime } from '@/lib/format';
-import type { Channel, ChannelResult, ChannelType, StatusResponse } from '@/lib/types';
+import type { Channel, ChannelResult, ChannelType, ProviderName, StatusResponse } from '@/lib/types';
 
 interface LinkInfo {
   type: ChannelType;
@@ -180,7 +180,14 @@ export default function SettingsPage() {
             {status && status.providers.flight === 'demo' && (
               <p className="px-4 py-3 text-xs leading-relaxed text-gray-500">
                 目前為示範資料：價格依路線、日期、連假與航空公司推算並每 5 分鐘隨機波動，方便體驗追蹤與通知流程。到{' '}
-                <span className="font-medium text-gray-700">developers.amadeus.com</span> 免費申請金鑰後填入環境變數，即可改用真實報價。
+                <span className="font-medium text-gray-700">serpapi.com</span> 註冊取得 API Key，在 Vercel 設定 SERPAPI_KEY 並 Redeploy，即可改用 Google
+                即時價格。
+              </p>
+            )}
+            {status && (status.providers.flight === 'serpapi' || status.providers.hotel === 'serpapi') && (
+              <p className="px-4 py-3 text-xs leading-relaxed text-gray-500">
+                SerpApi 免費方案每月約 100 次搜尋，每次搜尋和每次追蹤檢查都算一次；相同條件 1 小時內重複查詢不扣額度。追蹤頻率建議設 12
+                小時或每天。此模式不提供價格日曆。
               </p>
             )}
           </Card>
@@ -234,9 +241,10 @@ export default function SettingsPage() {
   );
 }
 
-function providerText(p?: 'demo' | 'amadeus', env?: 'test' | 'production' | null): string {
+function providerText(p?: ProviderName, env?: 'test' | 'production' | null): string {
   if (!p) return '—';
   if (p === 'demo') return '示範資料（模擬）';
+  if (p === 'serpapi') return 'Google 即時價格（SerpApi）';
   return env === 'production' ? 'Amadeus 正式環境' : 'Amadeus 測試環境';
 }
 

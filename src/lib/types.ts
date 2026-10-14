@@ -31,7 +31,7 @@ export interface HotelSearchParams {
   hotelName?: string;
 }
 
-export type ProviderName = 'demo' | 'amadeus';
+export type ProviderName = 'demo' | 'amadeus' | 'serpapi';
 
 export type DeepLinkKind = 'google' | 'skyscanner' | 'trip' | 'airline' | 'agoda' | 'booking' | 'other';
 export interface DeepLink {
@@ -71,6 +71,8 @@ export interface FlightOffer {
   validatingCarrier?: string;
   seatsLeft?: number;
   baggageIncluded?: boolean;
+  /** 來回票只拿到去程班次（價格是來回總價，回程要到預訂網站選） */
+  returnPending?: boolean;
   source: ProviderName;
   deepLinks: DeepLink[];
 }
@@ -210,4 +212,5 @@ export interface StatusResponse {
   serverless: boolean;
   appUrl: string;
   passwordProtected: boolean;
+  features: { calendar: boolean };
 }

@@ -20,13 +20,15 @@ export interface NotifyPayload {
 
 export function offerLines(o: Offer): string[] {
   if (o.kind === 'flight') {
-    return o.itineraries.map((it, i) => {
+    const lines = o.itineraries.map((it, i) => {
       const first = it.segments[0];
       const last = it.segments[it.segments.length - 1];
-      const label = o.itineraries.length > 1 ? (i === 0 ? '去程' : '回程') : '航班';
+      const label = o.itineraries.length > 1 ? (i === 0 ? '去程' : '回程') : o.returnPending ? '去程' : '航班';
       const stops = it.stops ? `轉機 ${it.stops} 次` : '直飛';
       return `${label} ${airlineName(first.carrier)} ${first.flightNumber}｜${fmtTime(first.departAt)} ${first.from} → ${fmtTime(last.arriveAt)} ${last.to}｜${stops} ${fmtDuration(it.durationMin)}`;
     });
+    if (o.returnPending) lines.push('回程班次請在預訂網站選擇');
+    return lines;
   }
   const meta = [o.stars ? `${o.stars} 星` : '', o.rating ? `評分 ${o.rating}` : '', o.area ?? ''].filter(Boolean).join(' · ');
   const price = `每晚 ${fmtPrice(o.pricePerNight, o.currency)} × ${o.nights} 晚${o.breakfast ? ' · 含早餐' : ''}${o.freeCancel ? ' · 免費取消' : ''}`;

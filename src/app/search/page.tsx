@@ -19,7 +19,15 @@ import { fetcher } from '@/lib/client';
 import { flightTitle, hotelTitle } from '@/lib/deeplinks';
 import { addDays, diffDays, fmtPrice, fmtRange } from '@/lib/format';
 import { flightParamsToQuery, hotelParamsToQuery, parseFlightQuery, parseHotelQuery } from '@/lib/schemas';
-import { CABIN_LABEL, type FlightOffer, type FlightSearchParams, type HotelOffer, type HotelSearchParams, type SearchResponse } from '@/lib/types';
+import {
+  CABIN_LABEL,
+  type FlightOffer,
+  type FlightSearchParams,
+  type HotelOffer,
+  type HotelSearchParams,
+  type SearchResponse,
+  type StatusResponse,
+} from '@/lib/types';
 
 export default function SearchPage() {
   return (
@@ -80,6 +88,7 @@ function FlightResults({ params }: { params: FlightSearchParams }) {
   const [sel, setSel] = useState<FlightOffer | null>(null);
   const [draft, setDraft] = useState<WatchDraft<FlightSearchParams> | null>(null);
   const [calOpen, setCalOpen] = useState(false);
+  const { data: status } = useSWR<StatusResponse>('/api/status', fetcher, { revalidateOnFocus: false });
 
   const carriers = useMemo(() => {
     const m = new Map<string, number>();
@@ -138,7 +147,7 @@ function FlightResults({ params }: { params: FlightSearchParams }) {
         <Chip active={nonStopOnly} onClick={() => setNonStopOnly(!nonStopOnly)}>
           直飛
         </Chip>
-        <Chip onClick={() => setCalOpen(true)}>📅 價格日曆</Chip>
+        {status?.features.calendar && <Chip onClick={() => setCalOpen(true)}>📅 價格日曆</Chip>}
       </div>
       {carriers.length > 1 && (
         <div className="flex gap-2 overflow-x-auto px-4 pb-2 no-scrollbar">

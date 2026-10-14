@@ -58,9 +58,10 @@ export function FlightCard({ offer, best, onClick }: { offer: FlightOffer; best?
       </div>
       <div className="mt-3 space-y-3">
         {offer.itineraries.map((it, i) => (
-          <ItineraryRow key={i} it={it} label={offer.itineraries.length > 1 ? (i === 0 ? '去程' : '回程') : undefined} />
+          <ItineraryRow key={i} it={it} label={offer.itineraries.length > 1 ? (i === 0 ? '去程' : '回程') : offer.returnPending ? '去程' : undefined} />
         ))}
       </div>
+      {offer.returnPending && <div className="mt-2 text-[11px] text-gray-500">價格為來回總價，回程班次請在預訂網站選擇</div>}
       <div className="mt-3 flex items-end justify-between border-t border-gray-100 pt-3">
         <div className="flex flex-wrap gap-1.5">
           {offer.baggageIncluded === true && <Tag>含託運行李</Tag>}

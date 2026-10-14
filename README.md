@@ -13,7 +13,7 @@
 - **追蹤最低價**：可追蹤整條路線 / 整個城市的最低價，也可只追蹤某家航空或某間飯店；設定目標價、降價幅度、檢查頻率（5 分鐘到每天）。
 - **通訊軟體通知**：LINE 以 Flex 卡片呈現（價格、理由、航班或房型、前往預訂按鈕），Telegram 以 HTML 訊息＋按鈕；在聊天室輸入「追蹤」可直接查看清單。
 - **深連結預訂**：每筆結果附 Google 航班 / Skyscanner / Trip.com（機票）與 Agoda / Booking.com / Google 飯店（住宿）的預填搜尋連結，台灣國內線另附立榮、華信官網。
-- **零設定即可體驗**：未填任何 API 金鑰時使用「示範資料」（依距離、連假、航空公司類型推算並每 5 分鐘波動），追蹤與通知流程完整可用；填入 Amadeus 金鑰後改用真實報價。
+- **零設定即可體驗**：未填任何 API 金鑰時使用「示範資料」（依距離、連假、航空公司類型推算並每 5 分鐘波動），追蹤與通知流程完整可用；填入 SerpApi 金鑰後改用 Google 即時價格。
 
 ## 用一個網址直接使用：部署到 Vercel（免費）
 
@@ -54,8 +54,9 @@ npm run dev
 | `APP_PASSWORD` | 設定後整個 App 需輸入密碼（HTTP Basic Auth，帳號任意）。公開部署強烈建議設定 |
 | `DATABASE_PATH` | 本機 SQLite 檔案路徑，預設 `data/best-booking.db` |
 | `TURSO_DATABASE_URL` / `TURSO_AUTH_TOKEN` | Turso 雲端資料庫（設定後優先於 SQLite；Vercel 必要） |
-| `FLIGHT_PROVIDER` / `HOTEL_PROVIDER` | `auto`（預設）/ `demo` / `amadeus` |
-| `AMADEUS_CLIENT_ID` / `AMADEUS_CLIENT_SECRET` / `AMADEUS_ENV` | Amadeus for Developers 金鑰與環境（`test` / `production`） |
+| `FLIGHT_PROVIDER` / `HOTEL_PROVIDER` | `auto`（預設）/ `demo` / `serpapi` / `amadeus` |
+| `SERPAPI_KEY` | SerpApi 金鑰，設定後改用 Google 航班 / Google 飯店即時價格 |
+| `AMADEUS_CLIENT_ID` / `AMADEUS_CLIENT_SECRET` / `AMADEUS_ENV` | 僅限已有 Amadeus 企業版者；Self-Service 已於 2026/7/17 關閉 |
 | `LINE_CHANNEL_ACCESS_TOKEN` / `LINE_CHANNEL_SECRET` / `LINE_BOT_BASIC_ID` | LINE Messaging API 設定 |
 | `TELEGRAM_BOT_TOKEN` / `TELEGRAM_BOT_USERNAME` / `TELEGRAM_POLLING` / `TELEGRAM_WEBHOOK_SECRET` | Telegram Bot 設定 |
 | `SCHEDULER_ENABLED` / `CHECK_TICK_SECONDS` | 內建排程開關與掃描間隔（秒；Vercel 會自動停用） |
@@ -80,14 +81,22 @@ npm run dev
 3. Vercel 等無伺服器環境：設定 `TELEGRAM_WEBHOOK_SECRET=任意字串`，部署後到「設定 → Telegram → 設定 Telegram Webhook 指向本站」按一次即可（等同呼叫 Telegram 的 setWebhook）。
 4. 「設定 → 連結 Telegram」會產生 `t.me/<bot>?start=連結碼` 一鍵連結。
 
-## 使用真實報價（Amadeus）
+## 使用真實價格（SerpApi）
 
-1. 到 [developers.amadeus.com](https://developers.amadeus.com/) 註冊並建立 App（免費），取得 API Key / Secret 填入 `AMADEUS_CLIENT_ID` / `AMADEUS_CLIENT_SECRET`。
-2. 測試環境（`AMADEUS_ENV=test`）免費但資料有限：機票多數主要航線可查，住宿與價格日曆僅部分城市有資料；查無資料時 App 會顯示錯誤或退回示範估算。
-3. 正式環境需在 Amadeus 申請 production key 並計費；建議把追蹤檢查頻率設為 3 小時以上以節省額度。
-4. 機票價格以 TWD 回傳；價格日曆（Flight Cheapest Date Search）的幣別依 Amadeus 回傳為準，畫面會標示。
+Amadeus 的免費 Self-Service API 已於 2026 年 7 月 17 日關閉，現在改用 [SerpApi](https://serpapi.com) 抓 Google 航班與 Google 飯店的即時價格（台幣）。
 
-> 想接 Skyscanner、Kiwi、Agoda 等其他來源，只要在 `src/lib/providers/` 新增一個回傳 `FlightOffer[]` / `HotelOffer[]` 的模組，並在 `src/lib/search.ts` 掛上即可。
+1. 到 serpapi.com 註冊，登入後在 Dashboard 複製 **Your Private API Key**。
+2. 在 Vercel 專案的 Environment Variables 新增 `SERPAPI_KEY`，然後 Redeploy。
+3. 打開 App 的「設定」頁，機票與住宿顯示「Google 即時價格（SerpApi）」就完成了。
+
+注意事項：
+
+- 免費方案每月約 100 次搜尋，每次搜尋與每次追蹤檢查都算一次；相同條件 1 小時內重複查詢走 SerpApi 快取，不扣額度。
+- 免費額度下建議追蹤頻率設 12 小時或每天，建立追蹤時預設就是 12 小時。
+- Google 航班的來回票只提供去程班次與來回總價，回程班次需在預訂網站選擇。
+- 此模式不提供價格日曆（每天各查一次會很快用完額度）。
+
+> 想接其他來源（例如 Ignav、Travelpayouts），只要在 `src/lib/providers/` 新增一個回傳 `FlightOffer[]` / `HotelOffer[]` 的模組，並在 `src/lib/search.ts` 掛上即可。
 
 ## 排程與通知邏輯
 
@@ -123,7 +132,7 @@ src/
     airports.ts        機場資料（台灣視角分區、中文名、別名搜尋）
     cities.ts          住宿目的地（含台灣熱門景點）
     holidays.ts        台灣國定假日與連假（2026 正式、2027 預估）
-    providers/         demo（示範資料）、amadeus（真實報價）
+    providers/         demo（示範資料）、serpapi（Google 即時價格）、amadeus（企業版）
     search.ts          供應商選擇、快取、深連結
     watcher.ts         追蹤檢查與通知判斷
     scheduler.ts       內建排程與 Telegram 輪詢（常駐環境）

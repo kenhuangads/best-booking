@@ -2,6 +2,7 @@ import { ok } from '@/lib/api';
 import { getDb } from '@/lib/db';
 import { env, errMsg } from '@/lib/env';
 import { schedulerStatus } from '@/lib/scheduler';
+import { calendarSupported } from '@/lib/search';
 import type { StatusResponse } from '@/lib/types';
 
 export const dynamic = 'force-dynamic';
@@ -32,6 +33,7 @@ export async function GET() {
     serverless: env.isServerless,
     appUrl: env.appUrl,
     passwordProtected: !!env.appPassword,
+    features: { calendar: calendarSupported() },
   };
   return ok(body);
 }

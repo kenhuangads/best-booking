@@ -58,13 +58,14 @@ export function FlightDetailSheet({
               {offer.baggageIncluded === true ? ' · 含託運行李' : offer.baggageIncluded === false ? ' · 不含託運行李' : ''}
               {offer.seatsLeft != null && offer.seatsLeft <= 9 ? ` · 剩 ${offer.seatsLeft} 位` : ''}
             </div>
+            {offer.returnPending && <div className="mt-1 text-xs text-gray-500">這是來回總價，回程班次請在預訂網站選擇</div>}
           </div>
 
           {offer.itineraries.map((it, i) => (
             <section key={i} className="mt-4">
               <h3 className="mb-2 flex items-center justify-between text-sm font-semibold">
                 <span>
-                  {offer.itineraries.length > 1 ? (i === 0 ? '去程' : '回程') : '航班'} · {fmtDateFull(it.segments[0].departAt.slice(0, 10))}
+                  {offer.itineraries.length > 1 ? (i === 0 ? '去程' : '回程') : offer.returnPending ? '去程' : '航班'} · {fmtDateFull(it.segments[0].departAt.slice(0, 10))}
                 </span>
                 <span className="text-xs font-normal text-gray-500">
                   {fmtDuration(it.durationMin)} · {it.stops ? `轉機 ${it.stops} 次` : '直飛'}

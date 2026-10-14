@@ -2,9 +2,10 @@
 
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { api, errText } from '@/lib/client';
+import useSWR from 'swr';
+import { api, errText, fetcher } from '@/lib/client';
 import { fmtPrice } from '@/lib/format';
-import type { FlightSearchParams, HotelSearchParams, Watch, WatchType } from '@/lib/types';
+import type { FlightSearchParams, HotelSearchParams, StatusResponse, Watch, WatchType } from '@/lib/types';
 import { Sheet } from './Sheet';
 import { toast } from './Toast';
 import { Chip, PrimaryButton, Toggle } from './ui';
@@ -39,6 +40,13 @@ export function CreateWatchSheet({ open, onClose, type, params, currentPrice, cu
   const [dropPercent, setDropPercent] = useState(5);
   const [intervalMin, setIntervalMin] = useState(60);
   const [saving, setSaving] = useState(false);
+  const { data: status } = useSWR<StatusResponse>('/api/status', fetcher, { revalidateOnFocus: false });
+  // SerpApi 免費額度少，預設改成 12 小時檢查一次
+  const quotaLimited = (type === 'flight' ? status?.providers.flight : status?.providers.hotel) === 'serpapi';
+
+  useEffect(() => {
+    if (open) setIntervalMin(quotaLimited ? 720 : 60);
+  }, [open, quotaLimited]);
 
   useEffect(() => {
     if (!open) return;
@@ -148,7 +156,11 @@ export function CreateWatchSheet({ open, onClose, type, params, currentPrice, cu
             </Chip>
           ))}
         </div>
-        <p className="mt-1.5 text-[11px] text-gray-400">使用真實 API 時，頻率越高消耗的查詢額度越多，建議 3 小時以上。</p>
+        <p className="mt-1.5 text-[11px] text-gray-400">
+          {quotaLimited
+            ? 'SerpApi 免費方案每月約 100 次搜尋，每次檢查算一次，建議 12 小時或每天檢查。'
+            : '使用真實價格 API 時，頻率越高消耗的查詢額度越多。'}
+        </p>
       </div>
 
       <label className="mt-4 block">
