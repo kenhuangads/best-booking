@@ -199,7 +199,7 @@ export default function SettingsPage() {
             )}
             {status && (status.providers.flight === 'serpapi' || status.providers.hotel === 'serpapi') && (
               <p className="px-4 py-3 text-xs leading-relaxed text-gray-500">
-                SerpApi 免費方案每月約 100 次搜尋，每次搜尋、住宿追蹤檢查和價格確認都算一次；相同條件 1 小時內重複查詢不扣額度。
+                SerpApi 免費方案每月約 250 次搜尋，每次搜尋、住宿追蹤檢查和價格確認都算一次；相同條件 1 小時內重複查詢不扣額度。
                 {status.providers.radar === 'travelpayouts' ? '機票追蹤由雷達負責，不耗額度。' : '沒有雷達時，機票追蹤頻率建議設 12 小時或每天。'}
               </p>
             )}

@@ -1,6 +1,6 @@
 /**
  * SerpApi：抓取 Google 航班 / Google 飯店的即時價格（https://serpapi.com）
- * - 免費方案每月約 100 次搜尋；相同條件 1 小時內重複查詢走 SerpApi 快取，不扣額度。
+ * - 免費方案每月約 250 次搜尋；相同條件 1 小時內重複查詢走 SerpApi 快取，不扣額度。
  * - Google 航班的來回票只回傳去程班次與來回總價，回程班次需在預訂網站選擇。
  */
 import { getCity } from '../cities';

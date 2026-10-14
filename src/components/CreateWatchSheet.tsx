@@ -161,7 +161,7 @@ export function CreateWatchSheet({ open, onClose, type, params, currentPrice, cu
         </div>
         <p className="mt-1.5 text-[11px] text-gray-400">
           {quotaLimited
-            ? 'SerpApi 免費方案每月約 100 次搜尋，每次檢查算一次，建議 12 小時或每天檢查。'
+            ? 'SerpApi 免費方案每月約 250 次搜尋，每次檢查算一次，建議 12 小時或每天檢查。'
             : radar
               ? '盯價用免費的 Aviasales 快取價格，不耗額度；發現低價時才向 Google 確認一次。'
               : '使用真實價格 API 時，頻率越高消耗的查詢額度越多。'}
