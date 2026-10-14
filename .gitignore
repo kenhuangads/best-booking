@@ -1,0 +1,19 @@
+# 相依套件與建置產物
+node_modules
+.next
+out
+tsconfig.tsbuildinfo
+next-env.d.ts
+.vercel
+
+# 本機資料與環境變數（請勿提交）
+data/*.db
+data/*.db-*
+.env
+.env.local
+.env.*.local
+
+# 其他
+*.log
+.DS_Store
+.claude/settings.local.json
