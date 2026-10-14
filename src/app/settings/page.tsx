@@ -212,7 +212,7 @@ export default function SettingsPage() {
               </PrimaryButton>
               <p className="mt-2 text-[11px] leading-relaxed text-gray-400">
                 {serverless
-                  ? `Vercel Cron 每天 09:00 會檢查一次；想要更即時，請到 cron-job.org 等免費排程服務，每 15–60 分鐘呼叫 ${status?.appUrl ?? ''}/api/cron/check?key=CRON_SECRET。`
+                  ? `Vercel Cron 每天 09:00 會檢查一次；想要更即時，請到 cron-job.org 等免費排程服務，每 5–60 分鐘呼叫 ${status?.appUrl ?? ''}/api/cron/check?key=CRON_SECRET。`
                   : '部署在無法常駐的平台時，可改用外部排程呼叫 GET /api/cron/check?key=CRON_SECRET。'}
               </p>
             </div>

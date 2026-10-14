@@ -85,10 +85,13 @@ export async function checkWatch(w: Watch, opts: { force?: boolean } = {}): Prom
   return outcome;
 }
 
+/** 排程觸發時間會有幾秒誤差，保留一點緩衝，避免 5 分鐘的追蹤被拖成 10 分鐘才檢查 */
 export function isDue(w: Watch, now = Date.now()): boolean {
   if (!w.active) return false;
   if (!w.lastCheckedAt) return true;
-  return Date.parse(w.lastCheckedAt) + w.intervalMin * 60000 <= now;
+  const intervalMs = w.intervalMin * 60000;
+  const grace = Math.min(90_000, intervalMs * 0.3);
+  return Date.parse(w.lastCheckedAt) + intervalMs - grace <= now;
 }
 
 /** 依序檢查到期的追蹤（避免同時打爆供應商 API） */

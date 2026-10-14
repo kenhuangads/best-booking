@@ -48,7 +48,7 @@ export const watchInputSchema = z.object({
   targetPrice: z.number().int().positive().nullable().optional(),
   notifyOnDrop: z.boolean().optional(),
   dropPercent: z.number().min(1).max(50).optional(),
-  intervalMin: z.number().int().min(15).max(1440).optional(),
+  intervalMin: z.number().int().min(5).max(1440).optional(),
 });
 
 export const watchPatchSchema = z.object({
@@ -56,7 +56,7 @@ export const watchPatchSchema = z.object({
   targetPrice: z.number().int().positive().nullable().optional(),
   notifyOnDrop: z.boolean().optional(),
   dropPercent: z.number().min(1).max(50).optional(),
-  intervalMin: z.number().int().min(15).max(1440).optional(),
+  intervalMin: z.number().int().min(5).max(1440).optional(),
   active: z.boolean().optional(),
 });
 
