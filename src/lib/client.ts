@@ -2,6 +2,10 @@
 
 async function parse<T>(r: Response): Promise<T> {
   const j = (await r.json().catch(() => ({}))) as { error?: string };
+  // 登入過期：帶著目前頁面跳到登入頁
+  if (r.status === 401 && typeof window !== 'undefined' && !window.location.pathname.startsWith('/login')) {
+    window.location.href = `/login?next=${encodeURIComponent(window.location.pathname + window.location.search)}`;
+  }
   if (!r.ok) throw new Error(j.error || `HTTP ${r.status}`);
   return j as T;
 }

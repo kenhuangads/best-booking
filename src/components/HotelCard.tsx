@@ -21,7 +21,7 @@ export function RatingBadge({ rating, count }: { rating?: number; count?: number
 
 export function HotelCard({ offer, best, onClick }: { offer: HotelOffer; best?: boolean; onClick: () => void }) {
   return (
-    <button type="button" onClick={onClick} className="flex w-full gap-3 rounded-2xl bg-white p-3 text-left shadow-card tap">
+    <button type="button" onClick={onClick} className="flex w-full gap-3 rounded-2xl bg-white p-3 text-left shadow-card transition-shadow tap lg:hover:shadow-md">
       <div className="flex h-24 w-24 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-sky-100 to-brand-100 text-3xl">🏨</div>
       <div className="min-w-0 flex-1">
         <div className="flex items-start justify-between gap-2">

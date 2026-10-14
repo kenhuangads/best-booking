@@ -23,7 +23,7 @@ export function Toaster() {
   }, []);
   if (!items.length) return null;
   return (
-    <div className="pointer-events-none fixed inset-x-0 bottom-[calc(84px+env(safe-area-inset-bottom))] z-[70] flex flex-col items-center gap-2 px-4">
+    <div className="pointer-events-none fixed inset-x-0 bottom-[calc(84px+env(safe-area-inset-bottom))] z-[70] flex flex-col items-center gap-2 px-4 lg:bottom-8 lg:pl-56">
       {items.map((i) => (
         <div
           key={i.id}

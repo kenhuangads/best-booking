@@ -117,7 +117,7 @@ export default function SettingsPage() {
   return (
     <main>
       <PageHeader title="設定" subtitle="通知管道、資料來源與排程" />
-      <div className="space-y-4 px-4 py-4">
+      <div className="space-y-4 px-4 py-4 lg:grid lg:grid-cols-2 lg:items-start lg:gap-6 lg:space-y-0 lg:px-8">
         <section>
           <h2 className="mb-2 px-1 text-xs font-semibold text-gray-500">通知管道</h2>
           <div className="space-y-3">
@@ -243,7 +243,21 @@ export default function SettingsPage() {
           <h2 className="mb-2 px-1 text-xs font-semibold text-gray-500">關於</h2>
           <Card className="divide-y divide-gray-100">
             <Row label="App 網址" value={status?.appUrl ?? '—'} />
-            <Row label="密碼保護" value={status ? (status.passwordProtected ? '已開啟（APP_PASSWORD）' : '未設定，公開部署前建議設定 APP_PASSWORD') : '—'} />
+            <Row label="密碼保護" value={status ? (status.passwordProtected ? '已開啟，登入後記住這台裝置一年' : '未設定，公開部署前建議設定 APP_PASSWORD') : '—'} />
+            {status?.passwordProtected && (
+              <div className="px-4 py-3">
+                <PrimaryButton
+                  variant="danger"
+                  onClick={async () => {
+                    if (!window.confirm('登出這台裝置？下次開啟需要重新輸入密碼。')) return;
+                    await fetch('/api/auth/logout', { method: 'POST' }).catch(() => undefined);
+                    window.location.href = '/login';
+                  }}
+                >
+                  登出這台裝置
+                </PrimaryButton>
+              </div>
+            )}
             <p className="px-4 py-3 text-xs leading-relaxed text-gray-500">
               旅行預訂神器 · 價格僅供參考，實際票價與房價以各訂購網站為準。可將此頁「加入主畫面」當作 App 使用。
             </p>

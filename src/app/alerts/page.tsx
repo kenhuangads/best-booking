@@ -40,7 +40,7 @@ export default function AlertsPage() {
   return (
     <main>
       <PageHeader title="通知紀錄" subtitle="達標、降價與測試通知的傳送結果" />
-      <div className="space-y-3 px-4 py-4">
+      <div className={`space-y-3 px-4 py-4 lg:px-8 ${alerts.length ? 'lg:grid lg:grid-cols-2 lg:items-start lg:gap-4 lg:space-y-0' : ''}`}>
         {isLoading ? (
           <ListSkeleton rows={3} />
         ) : error ? (

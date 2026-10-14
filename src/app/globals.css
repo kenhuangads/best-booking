@@ -62,6 +62,12 @@ input[type='number'] {
 .animate-sheet-up {
   animation: sheet-up 0.24s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
+/* 電腦版彈窗置中，改用淡入，避免和置中用的位移衝突 */
+@media (min-width: 1024px) {
+  .animate-sheet-up {
+    animation: fade-in 0.18s ease-out;
+  }
+}
 
 @keyframes fade-in {
   from {

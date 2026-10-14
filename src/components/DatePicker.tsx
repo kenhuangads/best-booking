@@ -111,10 +111,12 @@ export function DatePicker({
       onClose={onClose}
       title={title ?? (mode === 'range' ? `選擇${startLabel}與${endLabel}日期` : `選擇${startLabel}日期`)}
       full
+      wide
       footer={
-        <div>
-          <div className="mb-2 text-center text-sm text-gray-600">{summary}</div>
+        <div className="lg:flex lg:items-center lg:justify-between lg:gap-4">
+          <div className="mb-2 text-center text-sm text-gray-600 lg:mb-0 lg:text-left">{summary}</div>
           <PrimaryButton
+            className="lg:w-48"
             disabled={!valid}
             onClick={() => {
               if (valid && s) {
@@ -139,7 +141,7 @@ export function DatePicker({
                 setE(mode === 'range' ? lw.end : null);
                 setPhase('start');
               }}
-              className="shrink-0 rounded-full border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-medium text-rose-700 tap"
+              className="shrink-0 rounded-full border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-medium text-rose-700 tap lg:hover:bg-rose-100"
             >
               🎌 {lw.name} {fmtShort(lw.start)}–{fmtShort(lw.end)}
               {lw.estimated ? '*' : ''}
@@ -147,26 +149,40 @@ export function DatePicker({
           ))}
         </div>
       )}
-      <div className="sticky top-0 z-10 -mx-4 grid grid-cols-7 bg-white px-4 py-1.5 text-center text-xs text-gray-500">
-        {WEEKDAYS.map((w, i) => (
-          <div key={w} className={i === 0 ? 'text-red-500' : ''}>
-            {w}
+      <div className="sticky top-0 z-10 -mx-4 grid grid-cols-7 bg-white px-4 py-1.5 text-center text-xs text-gray-500 lg:hidden">
+        <WeekdayRow />
+      </div>
+      {/* 電腦版兩個月並排 */}
+      <div className="lg:grid lg:grid-cols-2 lg:gap-x-10">
+        {months.map((m) => (
+          <div key={m.key} className="mb-2 lg:mb-4">
+            <div className="py-2 text-sm font-semibold">{m.label}</div>
+            <div className="mb-1 hidden grid-cols-7 text-center text-xs text-gray-500 lg:grid">
+              <WeekdayRow />
+            </div>
+            <div className="grid grid-cols-7 gap-y-1">
+              {m.cells.map((d, i) => (d ? <DayCell key={d} d={d} min={min} today={today} s={s} e={e} onPick={pick} /> : <div key={`e${i}`} />))}
+            </div>
           </div>
         ))}
       </div>
-      {months.map((m) => (
-        <div key={m.key} className="mb-2">
-          <div className="py-2 text-sm font-semibold">{m.label}</div>
-          <div className="grid grid-cols-7 gap-y-1">
-            {m.cells.map((d, i) => (d ? <DayCell key={d} d={d} min={min} today={today} s={s} e={e} onPick={pick} /> : <div key={`e${i}`} />))}
-          </div>
-        </div>
-      ))}
       <p className="pb-2 pt-1 text-center text-[11px] leading-relaxed text-gray-400">
         紅字為例假日，淡紅底為連續假期
         <br />* 為依法規推算之預估日期，以人事行政總處公告為準
       </p>
     </Sheet>
+  );
+}
+
+function WeekdayRow() {
+  return (
+    <>
+      {WEEKDAYS.map((w, i) => (
+        <div key={w} className={i === 0 ? 'text-red-500' : ''}>
+          {w}
+        </div>
+      ))}
+    </>
   );
 }
 
@@ -194,7 +210,8 @@ function DayCell({
   const dow = parseISO(d).getDay();
   const red = !disabled && !isStart && !isEnd && (dow === 0 || !!hol);
 
-  let cls = 'relative flex h-12 flex-col items-center justify-center rounded-lg text-sm tap';
+  let cls = 'relative flex h-12 flex-col items-center justify-center rounded-lg text-sm tap lg:h-11';
+  if (!disabled && !(d === s) && !(d === e)) cls += ' lg:hover:ring-2 lg:hover:ring-brand-200';
   if (disabled) cls += ' text-gray-300';
   else if (isStart || isEnd) cls += ' bg-brand-600 font-semibold text-white';
   else if (inRange) cls += ' bg-brand-50 text-brand-700';

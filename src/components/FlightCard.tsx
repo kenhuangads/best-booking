@@ -47,8 +47,13 @@ export function ItineraryRow({ it, label }: { it: Itinerary; label?: string }) {
 export function FlightCard({ offer, best, onClick }: { offer: FlightOffer; best?: boolean; onClick: () => void }) {
   const carriers = [...new Set(offer.carriers)];
   return (
-    <button type="button" onClick={onClick} className="w-full rounded-2xl bg-white p-4 text-left shadow-card tap">
-      <div className="flex items-center justify-between gap-2">
+    <button
+      type="button"
+      onClick={onClick}
+      className="w-full rounded-2xl bg-white p-4 text-left shadow-card transition-shadow tap lg:hover:shadow-md xl:flex xl:items-center xl:gap-6 xl:p-5"
+    >
+      {/* 電腦寬螢幕：左欄航空公司、中欄航班、右欄價格 */}
+      <div className="flex items-center justify-between gap-2 xl:w-36 xl:shrink-0 xl:flex-col xl:items-start xl:justify-center">
         <div className="flex flex-wrap gap-2">
           {carriers.map((c) => (
             <AirlineBadge key={c} code={c} />
@@ -56,15 +61,17 @@ export function FlightCard({ offer, best, onClick }: { offer: FlightOffer; best?
         </div>
         {best && <span className="shrink-0 rounded-full bg-deal/10 px-2 py-0.5 text-[11px] font-semibold text-deal">最低價</span>}
       </div>
-      <div className="mt-3 space-y-3">
-        {offer.itineraries.map((it, i) => (
-          <ItineraryRow key={i} it={it} label={offer.itineraries.length > 1 ? (i === 0 ? '去程' : '回程') : offer.returnPending ? '去程' : undefined} />
-        ))}
+      <div className="mt-3 xl:mt-0 xl:min-w-0 xl:flex-1">
+        <div className="space-y-3">
+          {offer.itineraries.map((it, i) => (
+            <ItineraryRow key={i} it={it} label={offer.itineraries.length > 1 ? (i === 0 ? '去程' : '回程') : offer.returnPending ? '去程' : undefined} />
+          ))}
+        </div>
+        {offer.returnPending && <div className="mt-2 text-[11px] text-gray-500">價格為來回總價，回程班次請在預訂網站選擇</div>}
+        {offer.approximate && <div className="mt-2 text-[11px] text-gray-500">48 小時內查到的價格，到達時間為估計</div>}
       </div>
-      {offer.returnPending && <div className="mt-2 text-[11px] text-gray-500">價格為來回總價，回程班次請在預訂網站選擇</div>}
-      {offer.approximate && <div className="mt-2 text-[11px] text-gray-500">48 小時內查到的價格，到達時間為估計</div>}
-      <div className="mt-3 flex items-end justify-between border-t border-gray-100 pt-3">
-        <div className="flex flex-wrap gap-1.5">
+      <div className="mt-3 flex items-end justify-between border-t border-gray-100 pt-3 xl:mt-0 xl:w-40 xl:shrink-0 xl:flex-col-reverse xl:items-end xl:justify-center xl:gap-2 xl:border-l xl:border-t-0 xl:pl-6 xl:pt-0">
+        <div className="flex flex-wrap gap-1.5 xl:justify-end">
           {offer.baggageIncluded === true && <Tag>含託運行李</Tag>}
           {offer.baggageIncluded === false && <Tag tone="muted">不含託運行李</Tag>}
           {offer.seatsLeft != null && offer.seatsLeft <= 5 && <Tag tone="warn">剩 {offer.seatsLeft} 位</Tag>}

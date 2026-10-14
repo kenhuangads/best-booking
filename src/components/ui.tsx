@@ -51,7 +51,7 @@ export function FieldButton({
     <button
       type="button"
       onClick={onClick}
-      className={`flex min-h-[64px] w-full flex-col justify-center px-4 py-2 text-left tap ${align === 'right' ? 'items-end text-right' : ''} ${className}`}
+      className={`flex min-h-[64px] w-full flex-col justify-center px-4 py-2 text-left tap lg:hover:bg-gray-50 ${align === 'right' ? 'items-end text-right' : ''} ${className}`}
     >
       <span className="text-xs text-gray-500">{label}</span>
       <span className={`mt-0.5 text-base font-semibold ${value ? 'text-gray-900' : 'text-gray-400'}`}>{value ?? placeholder}</span>
@@ -129,7 +129,7 @@ export function Chip({ active = false, onClick, children, className = '' }: { ac
       type="button"
       onClick={onClick}
       aria-pressed={active}
-      className={`inline-flex h-9 shrink-0 items-center gap-1 whitespace-nowrap rounded-full border px-3.5 text-sm font-medium tap ${
+      className={`inline-flex h-9 shrink-0 items-center gap-1 whitespace-nowrap rounded-full border px-3.5 text-sm font-medium tap lg:hover:border-brand-400 ${
         active ? 'border-brand-600 bg-brand-50 text-brand-700' : 'border-gray-200 bg-white text-gray-700'
       } ${className}`}
     >
@@ -156,11 +156,11 @@ export function PrimaryButton({
   variant?: 'primary' | 'secondary' | 'danger' | 'line' | 'telegram';
 }) {
   const styles = {
-    primary: 'bg-brand-600 text-white shadow-lg shadow-brand-600/25',
-    secondary: 'bg-white text-gray-800 border border-gray-200',
-    danger: 'bg-red-50 text-red-600 border border-red-100',
-    line: 'bg-line text-white',
-    telegram: 'bg-telegram text-white',
+    primary: 'bg-brand-600 text-white shadow-lg shadow-brand-600/25 lg:hover:bg-brand-700',
+    secondary: 'bg-white text-gray-800 border border-gray-200 lg:hover:bg-gray-50',
+    danger: 'bg-red-50 text-red-600 border border-red-100 lg:hover:bg-red-100',
+    line: 'bg-line text-white lg:hover:brightness-95',
+    telegram: 'bg-telegram text-white lg:hover:brightness-95',
   }[variant];
   return (
     <button
@@ -215,11 +215,11 @@ export function Card({ children, className = '' }: { children: ReactNode; classN
 
 export function PageHeader({ title, subtitle, right }: { title: string; subtitle?: string; right?: ReactNode }) {
   return (
-    <header className="sticky top-0 z-30 border-b border-gray-200/70 bg-gray-50/95 px-4 pb-3 pt-4 backdrop-blur safe-top">
+    <header className="sticky top-0 z-30 border-b border-gray-200/70 bg-gray-50/95 px-4 pb-3 pt-4 backdrop-blur safe-top lg:static lg:border-0 lg:bg-transparent lg:px-8 lg:pb-2 lg:pt-8 lg:backdrop-blur-none">
       <div className="flex items-end justify-between gap-3">
         <div>
-          <h1 className="text-xl font-bold">{title}</h1>
-          {subtitle && <p className="mt-0.5 text-xs text-gray-500">{subtitle}</p>}
+          <h1 className="text-xl font-bold lg:text-2xl">{title}</h1>
+          {subtitle && <p className="mt-0.5 text-xs text-gray-500 lg:text-sm">{subtitle}</p>}
         </div>
         {right}
       </div>

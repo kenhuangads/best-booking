@@ -49,7 +49,7 @@ export default function WatchesPage() {
           ) : undefined
         }
       />
-      <div className="space-y-3 px-4 py-4">
+      <div className={`space-y-3 px-4 py-4 lg:px-8 ${ws.length ? 'lg:grid lg:grid-cols-2 lg:items-start lg:gap-4 lg:space-y-0 2xl:grid-cols-3' : ''}`}>
         {isLoading ? (
           <ListSkeleton rows={3} />
         ) : error ? (

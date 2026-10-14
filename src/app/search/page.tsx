@@ -10,7 +10,7 @@ import { FlightDetailSheet } from '@/components/FlightDetailSheet';
 import { HotelCard } from '@/components/HotelCard';
 import { HotelDetailSheet } from '@/components/HotelDetailSheet';
 import { PriceCalendarSheet } from '@/components/PriceCalendarSheet';
-import { ErrorBox, Footnote, ListSkeleton, ResultHeader, StickyCTA } from '@/components/ResultBits';
+import { ErrorBox, Footnote, ListSkeleton, Panel, PriceSummary, ResultHeader, ResultsLayout, StickyCTA } from '@/components/ResultBits';
 import { Chip, EmptyState } from '@/components/ui';
 import { airlineName, airlineSummary } from '@/lib/airlines';
 import { airportCity } from '@/lib/airports';
@@ -131,50 +131,70 @@ function FlightResults({ params }: { params: FlightSearchParams }) {
     }
   };
 
-  return (
-    <main className={best ? 'pb-24' : 'pb-6'}>
-      <ResultHeader title={title} subtitle={subtitle} />
-      <div className="sticky top-[62px] z-20 flex gap-2 overflow-x-auto bg-gray-50/95 px-4 py-2 backdrop-blur no-scrollbar">
-        <Chip active={sort === 'price'} onClick={() => setSort('price')}>
-          最便宜
-        </Chip>
-        <Chip active={sort === 'duration'} onClick={() => setSort('duration')}>
-          最快
-        </Chip>
-        <Chip active={sort === 'depart'} onClick={() => setSort('depart')}>
-          最早出發
-        </Chip>
-        <Chip active={nonStopOnly} onClick={() => setNonStopOnly(!nonStopOnly)}>
-          直飛
-        </Chip>
-        {status?.features.calendar && <Chip onClick={() => setCalOpen(true)}>📅 價格日曆</Chip>}
-      </div>
-      {carriers.length > 1 && (
-        <div className="flex gap-2 overflow-x-auto px-4 pb-2 no-scrollbar">
-          {carriers.map(([c, p]) => (
-            <Chip key={c} active={carrier === c} onClick={() => setCarrier(carrier === c ? null : c)}>
-              {airlineName(c)} <span className="text-gray-400">{fmtPrice(p)}</span>
-            </Chip>
-          ))}
-        </div>
-      )}
+  const sortChips = (
+    <>
+      <Chip active={sort === 'price'} onClick={() => setSort('price')}>
+        最便宜
+      </Chip>
+      <Chip active={sort === 'duration'} onClick={() => setSort('duration')}>
+        最快
+      </Chip>
+      <Chip active={sort === 'depart'} onClick={() => setSort('depart')}>
+        最早出發
+      </Chip>
+    </>
+  );
+  const filterChips = (
+    <>
+      <Chip active={nonStopOnly} onClick={() => setNonStopOnly(!nonStopOnly)}>
+        直飛
+      </Chip>
+      {status?.features.calendar && <Chip onClick={() => setCalOpen(true)}>📅 價格日曆</Chip>}
+    </>
+  );
+  const carrierChips = carriers.map(([c, p]) => (
+    <Chip key={c} active={carrier === c} onClick={() => setCarrier(carrier === c ? null : c)}>
+      {airlineName(c)} <span className="text-gray-400">{fmtPrice(p)}</span>
+    </Chip>
+  ));
 
-      <div className="space-y-3 px-4 pt-1">
-        {isLoading ? (
-          <ListSkeleton />
-        ) : error ? (
-          <ErrorBox message={(error as Error).message} onRetry={() => mutate()} />
-        ) : list.length === 0 ? (
-          <EmptyState
-            icon="🛫"
-            title="沒有符合的航班"
-            hint={params.carriers?.length ? '你指定的航空公司可能沒飛這條航線，點右上角「修改」調整' : '試試取消篩選、放寬條件或更換日期'}
-          />
-        ) : (
-          list.map((o) => <FlightCard key={o.id} offer={o} best={o.id === best?.id} onClick={() => setSel(o)} />)
-        )}
-        {data && <Footnote provider={data.provider} fetchedAt={data.fetchedAt} cached={data.cached} warnings={data.warnings} />}
-      </div>
+  return (
+    <main className={best ? 'pb-24 lg:pb-10' : 'pb-6'}>
+      <ResultHeader title={title} subtitle={subtitle} />
+      <ResultsLayout
+        aside={
+          <>
+            {best && !isLoading && <PriceSummary price={best.price} currency={best.currency} label={`目前最低 · ${pax}`} onClick={() => openWatch()} />}
+            <Panel title="排序">{sortChips}</Panel>
+            <Panel title="篩選">{filterChips}</Panel>
+            {carriers.length > 1 && <Panel title="航空公司">{carrierChips}</Panel>}
+          </>
+        }
+        bar={
+          <div className="flex gap-2 overflow-x-auto px-4 py-2 no-scrollbar">
+            {sortChips}
+            {filterChips}
+          </div>
+        }
+        subbar={carriers.length > 1 ? <div className="flex gap-2 overflow-x-auto px-4 pb-2 no-scrollbar">{carrierChips}</div> : undefined}
+      >
+        <div className="space-y-3 px-4 pt-1 lg:px-0 lg:pt-0">
+          {isLoading ? (
+            <ListSkeleton />
+          ) : error ? (
+            <ErrorBox message={(error as Error).message} onRetry={() => mutate()} />
+          ) : list.length === 0 ? (
+            <EmptyState
+              icon="🛫"
+              title="沒有符合的航班"
+              hint={params.carriers?.length ? '你指定的航空公司可能沒飛這條航線，點右上角「修改」調整' : '試試取消篩選、放寬條件或更換日期'}
+            />
+          ) : (
+            list.map((o) => <FlightCard key={o.id} offer={o} best={o.id === best?.id} onClick={() => setSel(o)} />)
+          )}
+          {data && <Footnote provider={data.provider} fetchedAt={data.fetchedAt} cached={data.cached} warnings={data.warnings} />}
+        </div>
+      </ResultsLayout>
 
       {best && !isLoading && <StickyCTA price={best.price} currency={best.currency} label={`目前最低 · ${pax}`} onClick={() => openWatch()} />}
 
@@ -245,44 +265,73 @@ function HotelResults({ params }: { params: HotelSearchParams }) {
   const nights = diffDays(params.checkIn, params.checkOut);
   const subtitle = `${fmtRange(params.checkIn, params.checkOut)} · ${nights} 晚 · ${params.rooms} 房 ${params.adults} 人`;
 
-  return (
-    <main className={best ? 'pb-24' : 'pb-6'}>
-      <ResultHeader title={`${city?.name ?? params.city} 住宿`} subtitle={subtitle} />
-      <div className="sticky top-[62px] z-20 flex gap-2 overflow-x-auto bg-gray-50/95 px-4 py-2 backdrop-blur no-scrollbar">
-        <Chip active={sort === 'price'} onClick={() => setSort('price')}>
-          最便宜
+  const trackCity = () => best && setDraft({ params, price: best.totalPrice, title: hotelTitle(params) });
+  const sortChips = (
+    <>
+      <Chip active={sort === 'price'} onClick={() => setSort('price')}>
+        最便宜
+      </Chip>
+      <Chip active={sort === 'rating'} onClick={() => setSort('rating')}>
+        評分最高
+      </Chip>
+      <Chip active={sort === 'distance'} onClick={() => setSort('distance')}>
+        離市中心最近
+      </Chip>
+    </>
+  );
+  const filterChips = (
+    <>
+      <Chip active={breakfast} onClick={() => setBreakfast(!breakfast)}>
+        含早餐
+      </Chip>
+      <Chip active={freeCancel} onClick={() => setFreeCancel(!freeCancel)}>
+        免費取消
+      </Chip>
+      {[3, 4, 5].map((s) => (
+        <Chip key={s} active={stars === s} onClick={() => setStars(stars === s ? null : s)}>
+          {s}★+
         </Chip>
-        <Chip active={sort === 'rating'} onClick={() => setSort('rating')}>
-          評分最高
-        </Chip>
-        <Chip active={sort === 'distance'} onClick={() => setSort('distance')}>
-          離市中心最近
-        </Chip>
-        <Chip active={breakfast} onClick={() => setBreakfast(!breakfast)}>
-          含早餐
-        </Chip>
-        <Chip active={freeCancel} onClick={() => setFreeCancel(!freeCancel)}>
-          免費取消
-        </Chip>
-        {[3, 4, 5].map((s) => (
-          <Chip key={s} active={stars === s} onClick={() => setStars(stars === s ? null : s)}>
-            {s}★+
-          </Chip>
-        ))}
-      </div>
+      ))}
+    </>
+  );
 
-      <div className="space-y-3 px-4 pt-1">
-        {isLoading ? (
-          <ListSkeleton />
-        ) : error ? (
-          <ErrorBox message={(error as Error).message} onRetry={() => mutate()} />
-        ) : list.length === 0 ? (
-          <EmptyState icon="🏨" title="沒有符合的住宿" hint="試試取消篩選或更換日期" />
-        ) : (
-          list.map((o) => <HotelCard key={o.id} offer={o} best={o.id === best?.id} onClick={() => setSel(o)} />)
-        )}
-        {data && <Footnote provider={data.provider} fetchedAt={data.fetchedAt} cached={data.cached} warnings={data.warnings} />}
-      </div>
+  return (
+    <main className={best ? 'pb-24 lg:pb-10' : 'pb-6'}>
+      <ResultHeader title={`${city?.name ?? params.city} 住宿`} subtitle={subtitle} />
+      <ResultsLayout
+        aside={
+          <>
+            {best && !isLoading && (
+              <PriceSummary price={best.totalPrice} currency={best.currency} label={`${city?.name ?? params.city}最低 · ${nights} 晚總價`} onClick={trackCity} />
+            )}
+            <Panel title="排序">{sortChips}</Panel>
+            <Panel title="篩選">{filterChips}</Panel>
+          </>
+        }
+        bar={
+          <div className="flex gap-2 overflow-x-auto px-4 py-2 no-scrollbar">
+            {sortChips}
+            {filterChips}
+          </div>
+        }
+      >
+        <div className="space-y-3 px-4 pt-1 lg:px-0 lg:pt-0">
+          {isLoading ? (
+            <ListSkeleton />
+          ) : error ? (
+            <ErrorBox message={(error as Error).message} onRetry={() => mutate()} />
+          ) : list.length === 0 ? (
+            <EmptyState icon="🏨" title="沒有符合的住宿" hint="試試取消篩選或更換日期" />
+          ) : (
+            <div className="space-y-3 xl:grid xl:grid-cols-2 xl:gap-4 xl:space-y-0">
+              {list.map((o) => (
+                <HotelCard key={o.id} offer={o} best={o.id === best?.id} onClick={() => setSel(o)} />
+              ))}
+            </div>
+          )}
+          {data && <Footnote provider={data.provider} fetchedAt={data.fetchedAt} cached={data.cached} warnings={data.warnings} />}
+        </div>
+      </ResultsLayout>
 
       {best && !isLoading && (
         <StickyCTA

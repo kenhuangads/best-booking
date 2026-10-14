@@ -2,11 +2,22 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import type { ReactNode } from 'react';
 
-const TABS = [
+export interface NavItem {
+  href: string;
+  label: string;
+  /** 電腦版側邊選單用的完整名稱 */
+  longLabel: string;
+  match: (p: string) => boolean;
+  icon: ReactNode;
+}
+
+export const NAV_ITEMS: NavItem[] = [
   {
     href: '/',
     label: '搜尋',
+    longLabel: '搜尋機票住宿',
     match: (p: string) => p === '/' || p.startsWith('/search'),
     icon: (
       <>
@@ -18,12 +29,14 @@ const TABS = [
   {
     href: '/watches',
     label: '追蹤',
+    longLabel: '追蹤清單',
     match: (p: string) => p.startsWith('/watches'),
     icon: <path d="M6 3h12a1 1 0 0 1 1 1v17l-7-4-7 4V4a1 1 0 0 1 1-1z" />,
   },
   {
     href: '/alerts',
     label: '通知',
+    longLabel: '通知紀錄',
     match: (p: string) => p.startsWith('/alerts'),
     icon: (
       <>
@@ -35,6 +48,7 @@ const TABS = [
   {
     href: '/settings',
     label: '設定',
+    longLabel: '設定',
     match: (p: string) => p.startsWith('/settings'),
     icon: (
       <>
@@ -45,15 +59,34 @@ const TABS = [
   },
 ];
 
+export function NavIcon({ children, active }: { children: ReactNode; active: boolean }) {
+  return (
+    <svg
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={active ? 2.2 : 1.8}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      {children}
+    </svg>
+  );
+}
+
+/** 手機版底部分頁列（電腦版改用側邊選單） */
 export function TabBar() {
   const pathname = usePathname() ?? '/';
   return (
     <nav
       aria-label="主選單"
-      className="fixed bottom-0 left-1/2 z-40 w-full max-w-md -translate-x-1/2 border-t border-gray-200 bg-white/95 backdrop-blur safe-bottom"
+      className="fixed bottom-0 left-1/2 z-40 w-full max-w-md -translate-x-1/2 border-t border-gray-200 bg-white/95 backdrop-blur safe-bottom lg:hidden"
     >
       <ul className="grid grid-cols-4">
-        {TABS.map((t) => {
+        {NAV_ITEMS.map((t) => {
           const active = t.match(pathname);
           return (
             <li key={t.href}>
@@ -64,19 +97,7 @@ export function TabBar() {
                 }`}
                 aria-current={active ? 'page' : undefined}
               >
-                <svg
-                  width="24"
-                  height="24"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth={active ? 2.2 : 1.8}
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  aria-hidden
-                >
-                  {t.icon}
-                </svg>
+                <NavIcon active={active}>{t.icon}</NavIcon>
                 {t.label}
               </Link>
             </li>
