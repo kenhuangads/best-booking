@@ -101,10 +101,11 @@ export async function searchHotels(p: HotelSearchParams, opts: SearchOptions = {
   const provider = env.hotelProvider;
   const raw =
     provider === 'serpapi' ? await searchHotelsSerpApi(p) : provider === 'amadeus' ? await searchHotelsAmadeus(p) : await searchHotelsDemo(p);
-  const offers = raw
+  const matched = raw
     .filter((o) => !p.hotelName || o.name === p.hotelName)
-    .map((o) => ({ ...o, deepLinks: mergeLinks(hotelDeepLinks(p, o.name), o.deepLinks) }))
-    .sort((a, b) => a.totalPrice - b.totalPrice);
+    .map((o) => ({ ...o, deepLinks: mergeLinks(hotelDeepLinks(p, o.name), o.deepLinks) }));
+  // 用名稱搜尋時保留相關度順序；其他情況（含追蹤檢查）依價格由低到高
+  const offers = p.keyword && !p.hotelName ? matched : matched.sort((a, b) => a.totalPrice - b.totalPrice);
   const res: SearchResponse<HotelOffer> = {
     offers,
     provider,

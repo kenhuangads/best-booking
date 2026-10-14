@@ -29,6 +29,8 @@ export interface HotelSearchParams {
   rooms: number;
   /** 只追蹤特定飯店（名稱完全相符） */
   hotelName?: string;
+  /** 用飯店名稱搜尋（模糊比對，找到後再選一間追蹤） */
+  keyword?: string;
 }
 
 export type ProviderName = 'demo' | 'amadeus' | 'serpapi' | 'travelpayouts';

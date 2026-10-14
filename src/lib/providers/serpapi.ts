@@ -158,7 +158,7 @@ export async function searchHotelsSerpApi(p: HotelSearchParams): Promise<HotelOf
   const nights = Math.max(1, diffDays(p.checkIn, p.checkOut));
   const r = await serpGet<SerpHotelsResp>({
     engine: 'google_hotels',
-    q: p.hotelName ? `${p.hotelName} ${city.searchName}` : `${city.searchName} 飯店`,
+    q: p.hotelName ? `${p.hotelName} ${city.searchName}` : p.keyword ? `${p.keyword} ${city.searchName}` : `${city.searchName} 飯店`,
     check_in_date: p.checkIn,
     check_out_date: p.checkOut,
     // Google 飯店不分房數：以每房人數查詢，總價再乘上房數
@@ -166,7 +166,8 @@ export async function searchHotelsSerpApi(p: HotelSearchParams): Promise<HotelOf
     currency: 'TWD',
     hl: 'zh-TW',
     gl: 'tw',
-    sort_by: p.hotelName ? undefined : 3,
+    // 用名稱找飯店時依相關度排序，才不會被附近較便宜的飯店擠下去
+    sort_by: p.hotelName || p.keyword ? undefined : 3,
   });
 
   // 查詢剛好對到單一飯店時，SerpApi 會把飯店資料直接放在最上層
@@ -200,5 +201,6 @@ export async function searchHotelsSerpApi(p: HotelSearchParams): Promise<HotelOf
       deepLinks: h.link ? [{ kind: 'other', label: '飯店官網', url: h.link }] : [],
     });
   }
-  return out.sort((a, b) => a.totalPrice - b.totalPrice);
+  // 保留 Google 的順序（用名稱搜尋時是相關度），價格排序交給 search.ts
+  return out;
 }

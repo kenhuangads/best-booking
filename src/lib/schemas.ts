@@ -42,6 +42,7 @@ export const hotelParamsSchema = z
     adults: z.coerce.number().int().min(1).max(9).default(2),
     rooms: z.coerce.number().int().min(1).max(5).default(1),
     hotelName: z.string().trim().min(1).max(120).optional(),
+    keyword: z.string().trim().min(1).max(80).optional(),
   })
   .superRefine((d, ctx) => {
     if (!getCity(d.city)) ctx.addIssue({ code: 'custom', message: `不支援的目的地 ${d.city}` });
@@ -107,6 +108,7 @@ export function parseHotelQuery(sp: Source): Parsed<HotelSearchParams> {
     adults: g('adults'),
     rooms: g('rooms'),
     hotelName: g('hotel') ?? g('hotelName'),
+    keyword: g('q') ?? g('keyword'),
   });
   return r.success ? { ok: true, value: r.data } : { ok: false, error: issues(r.error) };
 }
@@ -138,5 +140,6 @@ export function hotelParamsToQuery(p: HotelSearchParams): string {
     rooms: String(p.rooms),
   });
   if (p.hotelName) sp.set('hotel', p.hotelName);
+  if (p.keyword) sp.set('q', p.keyword);
   return sp.toString();
 }

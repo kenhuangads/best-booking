@@ -18,13 +18,15 @@ interface FormState {
   checkOut: string;
   adults: number;
   rooms: number;
+  /** 指定飯店名稱（選填） */
+  keyword: string;
 }
 
 const KEY = 'bb:hotelForm';
 
 function defaults(): FormState {
   const checkIn = addDays(todayISO(), 21);
-  return { city: 'TYO', checkIn, checkOut: addDays(checkIn, 3), adults: 2, rooms: 1 };
+  return { city: 'TYO', checkIn, checkOut: addDays(checkIn, 3), adults: 2, rooms: 1, keyword: '' };
 }
 
 export function HotelSearchForm() {
@@ -49,7 +51,14 @@ export function HotelSearchForm() {
   const nights = diffDays(f.checkIn, f.checkOut);
 
   const submit = () => {
-    const params: HotelSearchParams = { city: f.city, checkIn: f.checkIn, checkOut: f.checkOut, adults: f.adults, rooms: f.rooms };
+    const params: HotelSearchParams = {
+      city: f.city,
+      checkIn: f.checkIn,
+      checkOut: f.checkOut,
+      adults: f.adults,
+      rooms: f.rooms,
+      keyword: f.keyword.trim() || undefined,
+    };
     saveLocal(KEY, f);
     setSubmitting(true);
     router.push(`/search?${hotelParamsToQuery(params)}`);
@@ -79,10 +88,36 @@ export function HotelSearchForm() {
         <div className="border-t border-gray-200">
           <FieldButton label="房間 · 人數" value={`${f.rooms} 房 · ${f.adults} 位成人`} onClick={() => setSheet('guests')} />
         </div>
+        <label className="flex min-h-[64px] flex-col justify-center border-t border-gray-200 px-4 py-2">
+          <span className="text-xs text-gray-500">指定飯店（選填）</span>
+          <span className="mt-0.5 flex items-center">
+            <input
+              value={f.keyword}
+              onChange={(e) => update({ keyword: e.target.value })}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') submit();
+              }}
+              placeholder="例：京王廣場、礁溪老爺"
+              maxLength={80}
+              enterKeyHint="search"
+              className="min-w-0 flex-1 bg-transparent text-base font-semibold outline-none placeholder:font-normal placeholder:text-gray-400"
+            />
+            {f.keyword && (
+              <button
+                type="button"
+                aria-label="清除飯店名稱"
+                onClick={() => update({ keyword: '' })}
+                className="ml-2 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gray-100 text-gray-500 tap"
+              >
+                ×
+              </button>
+            )}
+          </span>
+        </label>
       </div>
 
       <PrimaryButton onClick={submit} loading={submitting} className="h-14">
-        🔍 搜尋最低房價
+        {f.keyword.trim() ? '🔍 搜尋這間飯店' : '🔍 搜尋最低房價'}
       </PrimaryButton>
 
       <div>

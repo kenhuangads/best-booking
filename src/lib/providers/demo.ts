@@ -342,7 +342,38 @@ export function generateHotelOffers(p: HotelSearchParams): HotelOffer[] {
       deepLinks: [],
     });
   }
-  return offers.sort((a, b) => a.totalPrice - b.totalPrice);
+  offers.sort((a, b) => a.totalPrice - b.totalPrice);
+
+  const wanted = (p.hotelName ?? p.keyword)?.trim();
+  if (!wanted) return offers;
+  const matches = offers.filter((o) => o.name.includes(wanted));
+  if (matches.length) return matches;
+  // 示範資料裡沒有這間：照輸入的名稱產生一筆，讓「搜尋特定飯店 → 追蹤」的流程可以體驗
+  const r = rngFor(`${key}:${wanted}`);
+  const perNight = Math.round((4500 * city.priceTier * seasonal * lead * (0.85 + r() * 0.4) * liveFactor(`${key}:${wanted}`)) / 10) * 10;
+  return [
+    {
+      id: `demo-${hash(`${key}:${wanted}`).toString(36)}`,
+      kind: 'hotel',
+      name: wanted,
+      stars: 4,
+      rating: Math.round((8 + r() * 1.5) * 10) / 10,
+      reviewCount: 200 + Math.floor(r() * 3000),
+      area: city.areas[0],
+      distanceKm: Math.round((0.5 + r() * 3) * 10) / 10,
+      pricePerNight: perNight,
+      totalPrice: perNight * nights * p.rooms,
+      currency: 'TWD',
+      nights,
+      roomType: '標準雙人房',
+      breakfast: r() < 0.5,
+      freeCancel: r() < 0.6,
+      lat: city.lat,
+      lng: city.lng,
+      source: 'demo',
+      deepLinks: [],
+    },
+  ];
 }
 
 export async function searchHotelsDemo(p: HotelSearchParams): Promise<HotelOffer[]> {
