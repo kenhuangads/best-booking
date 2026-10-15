@@ -30,6 +30,10 @@ interface WatchRow {
   last_notified_price: number | null;
   last_result: string | null;
   last_error: string | null;
+  note: string | null;
+  last_serp_at: string | null;
+  radar_miss: number | null;
+  radar_floor: number | null;
   created_at: string;
   updated_at: string;
 }
@@ -49,6 +53,10 @@ function rowToWatch(r: WatchRow, history: PricePoint[] = []): Watch {
     lastNotifiedAt: r.last_notified_at,
     lastNotifiedPrice: r.last_notified_price,
     lastError: r.last_error,
+    note: r.note ?? null,
+    lastSerpAt: r.last_serp_at ?? null,
+    radarMiss: !!r.radar_miss,
+    radarFloor: r.radar_floor ?? null,
     createdAt: r.created_at,
     updatedAt: r.updated_at,
     history,
@@ -141,6 +149,10 @@ export interface WatchPatch {
   lastNotifiedPrice?: number | null;
   lastResult?: FlightOffer | HotelOffer | null;
   lastError?: string | null;
+  note?: string | null;
+  lastSerpAt?: string | null;
+  radarMiss?: boolean;
+  radarFloor?: number | null;
 }
 
 const PATCH_COLUMNS: Record<keyof WatchPatch, string> = {
@@ -157,6 +169,10 @@ const PATCH_COLUMNS: Record<keyof WatchPatch, string> = {
   lastNotifiedPrice: 'last_notified_price',
   lastResult: 'last_result',
   lastError: 'last_error',
+  note: 'note',
+  lastSerpAt: 'last_serp_at',
+  radarMiss: 'radar_miss',
+  radarFloor: 'radar_floor',
 };
 
 export async function updateWatch(id: string, patch: WatchPatch): Promise<Watch | null> {
@@ -335,6 +351,20 @@ export async function createAlert(a: {
 }
 
 /* ───────────── settings ───────────── */
+
+/* ───────────── SerpApi 自動查價紀錄（控管額度用） ───────────── */
+
+export async function recordSerpCall(kind: string, watchId: string | null): Promise<void> {
+  const db = await getDb();
+  await db.run('INSERT INTO serp_calls (at, kind, watch_id) VALUES (?, ?, ?)', [nowISO(), kind, watchId]);
+  await db.run('DELETE FROM serp_calls WHERE at < ?', [new Date(Date.now() - 40 * 86400000).toISOString()]);
+}
+
+export async function countSerpCalls(sinceISO: string): Promise<number> {
+  const db = await getDb();
+  const row = await db.get<{ n: number }>('SELECT COUNT(*) AS n FROM serp_calls WHERE at >= ?', [sinceISO]);
+  return Number(row?.n ?? 0);
+}
 
 export async function getSetting(key: string): Promise<string | null> {
   const db = await getDb();

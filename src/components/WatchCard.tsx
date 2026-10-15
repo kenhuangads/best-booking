@@ -30,6 +30,8 @@ export function WatchCard({ w, onChanged }: { w: Watch; onChanged: () => void })
   const sourceLabel = w.lastResult
     ? { serpapi: 'Google 確認', travelpayouts: '快取價', amadeus: 'Amadeus', demo: '示範' }[w.lastResult.source]
     : null;
+  // 價格真正查到的時間（依額度延後的檢查不算）
+  const lastPriceAt = w.history.at(-1)?.checkedAt ?? null;
 
   const run = async (kind: Busy, fn: () => Promise<unknown>) => {
     setBusy(kind);
@@ -45,8 +47,11 @@ export function WatchCard({ w, onChanged }: { w: Watch; onChanged: () => void })
 
   const check = () =>
     run('check', async () => {
-      const r = await api<{ outcome: { price: number | null; notified: boolean; error: string | null } }>(`/api/watches/${w.id}/check`);
+      const r = await api<{ outcome: { price: number | null; notified: boolean; error: string | null; skipped: boolean; note: string | null } }>(
+        `/api/watches/${w.id}/check`,
+      );
       if (r.outcome.error) toast(r.outcome.error, 'err');
+      else if (r.outcome.skipped) toast(r.outcome.note ?? '已檢查，價格沒有變化');
       else toast(r.outcome.notified ? `已通知！目前 ${fmtPrice(r.outcome.price, currency)}` : `目前最低 ${fmtPrice(r.outcome.price, currency)}`);
     });
   const toggle = () => run('toggle', () => api(`/api/watches/${w.id}`, { method: 'PATCH', body: { active: !w.active } }));
@@ -100,10 +105,12 @@ export function WatchCard({ w, onChanged }: { w: Watch; onChanged: () => void })
       )}
 
       <div className="mt-2 text-[11px] text-gray-400">
-        {w.lastCheckedAt ? `${relTime(w.lastCheckedAt)}檢查` : '尚未檢查'} · 每 {intervalLabel(w.intervalMin)}
+        {lastPriceAt ? `上次查價 ${relTime(lastPriceAt)}` : '尚未查價'}
+        {!w.note && ` · 每 ${intervalLabel(w.intervalMin)}`}
         {w.notifyOnDrop ? ` · 降 ${w.dropPercent}% 通知` : ''}
-        {w.lastError && <span className="text-red-500"> · {w.lastError}</span>}
       </div>
+      {w.note && !w.lastError && <div className="mt-0.5 text-[11px] text-gray-500">{w.note}</div>}
+      {w.lastError && <div className="mt-0.5 text-[11px] text-red-500">{w.lastError}</div>}
 
       <div className="mt-3 grid grid-cols-4 gap-2">
         <button type="button" onClick={check} disabled={!!busy} className={`${btn} bg-brand-50 text-brand-700`}>

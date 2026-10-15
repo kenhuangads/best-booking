@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import useSWR from 'swr';
 import { api, errText, fetcher } from '@/lib/client';
 import { fmtPrice } from '@/lib/format';
+import { spacingFor } from '@/lib/quotaMath';
 import type { FlightSearchParams, HotelSearchParams, StatusResponse, Watch, WatchType } from '@/lib/types';
 import { Sheet } from './Sheet';
 import { toast } from './Toast';
@@ -43,13 +44,16 @@ export function CreateWatchSheet({ open, onClose, type, params, currentPrice, cu
   const { data: status } = useSWR<StatusResponse>('/api/status', fetcher, { revalidateOnFocus: false });
   // 每次檢查用的來源：機票有雷達就用雷達（免費），否則用主要來源
   const checkProvider = type === 'flight' ? status?.providers.radar : status?.providers.hotel;
-  // SerpApi 免費額度少，預設改成 12 小時檢查一次；雷達免費，預設 30 分鐘
+  // 用 SerpApi 查價的追蹤由系統依額度安排頻率；雷達免費，預設 30 分鐘
   const quotaLimited = checkProvider === 'serpapi';
   const radar = checkProvider === 'travelpayouts';
+  const serp = status?.serp;
+  // 加入這筆之後，每筆追蹤的 Google 查價間隔
+  const nextSpacing = serp ? spacingFor(serp.dependentCount + 1, serp.dailyCap) : null;
 
   useEffect(() => {
-    if (open) setIntervalMin(quotaLimited ? 720 : radar ? 30 : 60);
-  }, [open, quotaLimited, radar]);
+    if (open) setIntervalMin(radar ? 30 : 60);
+  }, [open, radar]);
 
   useEffect(() => {
     if (!open) return;
@@ -152,20 +156,24 @@ export function CreateWatchSheet({ open, onClose, type, params, currentPrice, cu
 
       <div className="mt-4">
         <div className="text-sm font-medium">檢查頻率</div>
-        <div className="mt-2 flex flex-wrap gap-2">
-          {INTERVALS.map(([min, label]) => (
-            <Chip key={min} active={intervalMin === min} onClick={() => setIntervalMin(min)}>
-              {label}
-            </Chip>
-          ))}
-        </div>
-        <p className="mt-1.5 text-[11px] text-gray-400">
-          {quotaLimited
-            ? 'SerpApi 免費方案每月約 250 次搜尋，每次檢查算一次，建議 12 小時或每天檢查。'
-            : radar
-              ? '盯價用免費的 Aviasales 快取價格，不耗額度；發現低價時才向 Google 確認一次。'
-              : '使用真實價格 API 時，頻率越高消耗的查詢額度越多。'}
-        </p>
+        {quotaLimited ? (
+          <p className="mt-1.5 rounded-xl bg-gray-50 px-3 py-2.5 text-xs leading-relaxed text-gray-600">
+            依 Google 查價額度自動安排{nextSpacing ? `，加入後約每 ${nextSpacing} 小時查一次` : ''}。追蹤越多，每筆間隔越長；按「立即檢查」可以隨時查。
+          </p>
+        ) : (
+          <>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {INTERVALS.map(([min, label]) => (
+                <Chip key={min} active={intervalMin === min} onClick={() => setIntervalMin(min)}>
+                  {label}
+                </Chip>
+              ))}
+            </div>
+            <p className="mt-1.5 text-[11px] text-gray-400">
+              {radar ? '盯價用免費的 Aviasales 快取價格，不耗額度；發現低價時才向 Google 確認一次。' : '使用真實價格 API 時，頻率越高消耗的查詢額度越多。'}
+            </p>
+          </>
+        )}
       </div>
 
       <label className="mt-4 block">

@@ -37,7 +37,8 @@ export function startScheduler(): void {
         if (out.length) {
           const notified = out.filter((o) => o.notified).length;
           const errors = out.filter((o) => o.error).length;
-          st.lastRunSummary = `檢查 ${out.length} 筆，通知 ${notified} 筆${errors ? `，${errors} 筆錯誤` : ''}`;
+          const skipped = out.filter((o) => o.skipped).length;
+          st.lastRunSummary = `檢查 ${out.length} 筆，通知 ${notified} 筆${skipped ? `，${skipped} 筆依額度延後` : ''}${errors ? `，${errors} 筆錯誤` : ''}`;
           console.log(`[scheduler] ${st.lastRunSummary}`);
         } else {
           st.lastRunSummary = '沒有到期的追蹤';

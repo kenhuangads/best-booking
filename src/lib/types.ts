@@ -151,6 +151,14 @@ interface WatchBase {
   createdAt: string;
   updatedAt: string;
   history: PricePoint[];
+  /** 狀態說明（不是錯誤），例如「每 10 小時向 Google 查價一次」 */
+  note: string | null;
+  /** 上次向 Google（SerpApi）查價的時間 */
+  lastSerpAt: string | null;
+  /** 雷達（Travelpayouts）上次查無此航線 */
+  radarMiss: boolean;
+  /** 已被 Google 否定過的快取低價，避免一直重複確認同一個過期快取 */
+  radarFloor: number | null;
 }
 export interface FlightWatch extends WatchBase {
   type: 'flight';
@@ -217,4 +225,23 @@ export interface StatusResponse {
   appUrl: string;
   passwordProtected: boolean;
   features: { calendar: boolean };
+  /** SerpApi 額度與自動查價安排（未設定 SerpApi 時為 null） */
+  serp: SerpPlanInfo | null;
+}
+
+export interface SerpPlanInfo {
+  monthlyQuota: number;
+  /** 每天自動查價上限（每月額度的 70%，其餘留給手動搜尋） */
+  dailyCap: number;
+  /** 需要定期向 Google 查價的追蹤筆數（住宿、快取查不到的機票） */
+  dependentCount: number;
+  /** 每筆追蹤向 Google 查價的間隔（小時） */
+  spacingHours: number;
+  /** 過去 24 小時自動查價次數 */
+  usedToday: number;
+  /** SerpApi 帳戶本月已用 / 剩餘（查不到時為 null） */
+  used: number | null;
+  left: number | null;
+  /** 剩餘額度過低，暫停自動查價 */
+  paused: boolean;
 }

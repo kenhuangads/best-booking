@@ -197,14 +197,48 @@ export default function SettingsPage() {
                 即時價格。
               </p>
             )}
-            {status && (status.providers.flight === 'serpapi' || status.providers.hotel === 'serpapi') && (
-              <p className="px-4 py-3 text-xs leading-relaxed text-gray-500">
-                SerpApi 免費方案每月約 250 次搜尋，每次搜尋、住宿追蹤檢查和價格確認都算一次；相同條件 1 小時內重複查詢不扣額度。
-                {status.providers.radar === 'travelpayouts' ? '機票追蹤由雷達負責，不耗額度。' : '沒有雷達時，機票追蹤頻率建議設 12 小時或每天。'}
-              </p>
-            )}
           </Card>
         </section>
+
+        {status?.serp && (
+          <section>
+            <h2 className="mb-2 px-1 text-xs font-semibold text-gray-500">Google 查價額度（SerpApi）</h2>
+            <Card className="divide-y divide-gray-100">
+              {status.serp.used != null && status.serp.left != null && (
+                <div className="px-4 py-3">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-gray-500">本月用量</span>
+                    <span className="font-medium">
+                      {status.serp.used} / {status.serp.monthlyQuota} 次，剩 {status.serp.left} 次
+                    </span>
+                  </div>
+                  <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-gray-100">
+                    <div
+                      className={`h-full rounded-full ${status.serp.paused ? 'bg-red-500' : 'bg-brand-500'}`}
+                      style={{ width: `${Math.min(100, Math.round((status.serp.used / Math.max(1, status.serp.monthlyQuota)) * 100))}%` }}
+                    />
+                  </div>
+                </div>
+              )}
+              <Row
+                label="自動查價"
+                value={
+                  status.serp.paused
+                    ? '額度偏低，已暫停'
+                    : status.serp.dependentCount
+                      ? `${status.serp.dependentCount} 筆追蹤，各每 ${status.serp.spacingHours} 小時一次`
+                      : '目前沒有追蹤需要'
+                }
+              />
+              <Row label="今天已用" value={`${status.serp.usedToday} / ${status.serp.dailyCap} 次`} />
+              <p className="px-4 py-3 text-xs leading-relaxed text-gray-500">
+                每月額度留 30% 給你手動搜尋，其餘平均分給住宿追蹤和快取查不到的機票追蹤，追蹤越多、每筆查價間隔越長。
+                {status.providers.radar === 'travelpayouts' ? '快取查得到的機票由免費雷達盯價，只在發現低價時才用一次額度確認。' : ''}
+                按「立即檢查」不受限制，但會用掉額度。
+              </p>
+            </Card>
+          </section>
+        )}
 
         <section>
           <h2 className="mb-2 px-1 text-xs font-semibold text-gray-500">自動檢查排程</h2>

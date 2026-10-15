@@ -83,7 +83,33 @@ CREATE TABLE IF NOT EXISTS login_attempts (
   at TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_login_attempts ON login_attempts(ip, at);
+CREATE TABLE IF NOT EXISTS serp_calls (
+  at TEXT NOT NULL,
+  kind TEXT NOT NULL,
+  watch_id TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_serp_calls_at ON serp_calls(at);
 `;
+
+/** 舊資料庫補欄位（CREATE TABLE IF NOT EXISTS 不會幫既有的表加欄位） */
+const WATCH_COLUMNS: [string, string][] = [
+  ['note', 'note TEXT'],
+  ['last_serp_at', 'last_serp_at TEXT'],
+  ['radar_miss', 'radar_miss INTEGER NOT NULL DEFAULT 0'],
+  ['radar_floor', 'radar_floor INTEGER'],
+];
+
+async function migrate(columns: string[], exec: (sql: string) => Promise<unknown>): Promise<void> {
+  for (const [name, ddl] of WATCH_COLUMNS) {
+    if (columns.includes(name)) continue;
+    try {
+      await exec(`ALTER TABLE watches ADD COLUMN ${ddl}`);
+    } catch (e) {
+      // 兩個執行個體同時啟動時，另一個可能已經加好了
+      if (!/duplicate column/i.test(e instanceof Error ? e.message : String(e))) throw e;
+    }
+  }
+}
 
 declare global {
   // eslint-disable-next-line no-var
@@ -97,6 +123,8 @@ async function createSqlite(): Promise<DbAdapter> {
   const conn = new Database(file);
   conn.pragma('journal_mode = WAL');
   conn.exec(SCHEMA);
+  const cols = (conn.prepare('PRAGMA table_info(watches)').all() as { name: string }[]).map((c) => c.name);
+  await migrate(cols, async (sql) => conn.exec(sql));
   return {
     backend: 'sqlite',
     persistent: !env.isServerless,
@@ -119,6 +147,10 @@ async function createTurso(): Promise<DbAdapter> {
   type InValue = string | number | bigint | boolean | ArrayBuffer | Uint8Array | Date | null;
   const client = createClient({ url: env.turso.url, authToken: env.turso.token || undefined });
   await client.executeMultiple(SCHEMA);
+  const info = await client.execute('PRAGMA table_info(watches)');
+  const nameIdx = info.columns.indexOf('name');
+  const cols = info.rows.map((row) => String((row as unknown as Record<number, unknown>)[nameIdx]));
+  await migrate(cols, (sql) => client.execute(sql));
   const toArgs = (args: unknown[]) => args.map((a) => (a === undefined ? null : a)) as InValue[];
   const rowToObject = (columns: string[], row: Record<string | number, unknown>) => {
     const o: Record<string, unknown> = {};

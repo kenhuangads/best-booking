@@ -29,6 +29,44 @@ async function serpGet<T extends object>(params: Params): Promise<Partial<T>> {
   return j;
 }
 
+/* ───────────── 帳戶額度（Account API 免費，不扣額度） ───────────── */
+
+export interface SerpAccount {
+  quota: number;
+  used: number;
+  left: number;
+}
+
+let accountCache: { at: number; value: SerpAccount | null } | null = null;
+
+export async function serpAccount(): Promise<SerpAccount | null> {
+  const { key, endpoint } = env.serpapi;
+  if (!key) return null;
+  if (accountCache && Date.now() - accountCache.at < 10 * 60 * 1000) return accountCache.value;
+  let value: SerpAccount | null = null;
+  try {
+    const base = endpoint.replace(/\/search(\.json)?$/, '');
+    const r = await fetch(`${base}/account.json?api_key=${encodeURIComponent(key)}`, { cache: 'no-store' });
+    const j = (await r.json().catch(() => ({}))) as {
+      searches_per_month?: number;
+      this_month_usage?: number;
+      total_searches_left?: number;
+      plan_searches_left?: number;
+    };
+    if (r.ok && typeof j.searches_per_month === 'number') {
+      value = {
+        quota: j.searches_per_month,
+        used: j.this_month_usage ?? 0,
+        left: j.total_searches_left ?? j.plan_searches_left ?? Math.max(0, j.searches_per_month - (j.this_month_usage ?? 0)),
+      };
+    }
+  } catch {
+    /* 查不到就用預設額度 */
+  }
+  accountCache = { at: Date.now(), value };
+  return value;
+}
+
 /* ───────────── 機票 ───────────── */
 
 interface SerpAirport {

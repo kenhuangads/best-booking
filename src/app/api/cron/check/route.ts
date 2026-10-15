@@ -23,6 +23,7 @@ async function handle(req: NextRequest) {
     return ok({
       checked: outcomes.length,
       notified: outcomes.filter((o) => o.notified).length,
+      skipped: outcomes.filter((o) => o.skipped).length,
       errors: outcomes.filter((o) => o.error).length,
       outcomes,
     });

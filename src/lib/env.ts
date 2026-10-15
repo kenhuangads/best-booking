@@ -55,7 +55,14 @@ export const env = {
   /** SerpApi：Google 航班 / Google 飯店即時價格 */
   get serpapi() {
     const key = str('SERPAPI_KEY');
-    return { key, configured: !!key, endpoint: str('SERPAPI_ENDPOINT', 'https://serpapi.com/search.json') };
+    const quota = Number(str('SERPAPI_MONTHLY_QUOTA', '250'));
+    return {
+      key,
+      configured: !!key,
+      endpoint: str('SERPAPI_ENDPOINT', 'https://serpapi.com/search.json'),
+      /** 查不到帳戶資料時使用的每月額度 */
+      monthlyQuota: Number.isFinite(quota) && quota > 0 ? quota : 250,
+    };
   },
   /** Travelpayouts（Aviasales 快取價格）：免費、額度大，當追蹤用的價格雷達 */
   get travelpayouts() {

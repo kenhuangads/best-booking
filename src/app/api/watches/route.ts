@@ -36,8 +36,8 @@ export async function POST(req: Request) {
 
   try {
     const created = await createWatch(watchInput);
-    // 建立後立即檢查一次，讓使用者馬上看到目前價格
-    const outcome = await checkWatch(created, { force: false });
+    // 建立後立即檢查一次，讓使用者馬上看到目前價格（使用者親手建立，不受自動查價額度安排限制）
+    const outcome = await checkWatch(created, { force: true });
     return ok({ watch: (await getWatch(created.id)) ?? created, outcome }, { status: 201 });
   } catch (e) {
     return fail(`建立追蹤失敗：${errMsg(e)}`, 500);
