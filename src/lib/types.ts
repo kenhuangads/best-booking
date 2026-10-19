@@ -31,6 +31,8 @@ export interface HotelSearchParams {
   hotelName?: string;
   /** 用飯店名稱搜尋（模糊比對，找到後再選一間追蹤） */
   keyword?: string;
+  /** Google 飯店的編號：追蹤單一飯店時用它精準查價，不怕名稱寫法不同 */
+  propertyToken?: string;
 }
 
 export type ProviderName = 'demo' | 'amadeus' | 'serpapi' | 'travelpayouts';
@@ -99,6 +101,8 @@ export interface HotelOffer {
   freeCancel?: boolean;
   lat?: number;
   lng?: number;
+  /** Google 飯店的編號（SerpApi） */
+  propertyToken?: string;
   source: ProviderName;
   deepLinks: DeepLink[];
 }

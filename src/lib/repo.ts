@@ -5,7 +5,9 @@ import type {
   ChannelResult,
   ChannelType,
   FlightOffer,
+  FlightSearchParams,
   HotelOffer,
+  HotelSearchParams,
   PricePoint,
   Watch,
   WatchInput,
@@ -136,6 +138,8 @@ export async function createWatch(input: WatchInput & { title: string }): Promis
 }
 
 export interface WatchPatch {
+  /** 改日期等搜尋條件 */
+  params?: FlightSearchParams | HotelSearchParams;
   title?: string;
   targetPrice?: number | null;
   notifyOnDrop?: boolean;
@@ -156,6 +160,7 @@ export interface WatchPatch {
 }
 
 const PATCH_COLUMNS: Record<keyof WatchPatch, string> = {
+  params: 'params',
   title: 'title',
   targetPrice: 'target_price',
   notifyOnDrop: 'notify_on_drop',
@@ -182,7 +187,7 @@ export async function updateWatch(id: string, patch: WatchPatch): Promise<Watch 
     if (!(key in patch)) continue;
     let v: unknown = patch[key];
     if (typeof v === 'boolean') v = v ? 1 : 0;
-    if (key === 'lastResult') v = v == null ? null : JSON.stringify(v);
+    if (key === 'lastResult' || key === 'params') v = v == null ? null : JSON.stringify(v);
     sets.push(`${col} = ?`);
     values.push(v ?? null);
   }
@@ -199,6 +204,12 @@ export async function deleteWatch(id: string): Promise<boolean> {
   await db.run('DELETE FROM price_points WHERE watch_id = ?', [id]);
   const r = await db.run('DELETE FROM watches WHERE id = ?', [id]);
   return r.changes > 0;
+}
+
+/** 改了日期後舊價格不再有意義，清掉走勢 */
+export async function clearHistory(watchId: string): Promise<void> {
+  const db = await getDb();
+  await db.run('DELETE FROM price_points WHERE watch_id = ?', [watchId]);
 }
 
 export async function addPricePoint(watchId: string, price: number, currency: string, checkedAt: string): Promise<void> {

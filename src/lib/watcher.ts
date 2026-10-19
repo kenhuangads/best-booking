@@ -43,6 +43,8 @@ function serpGate(w: Watch, plan: SerpPlan | null, force: boolean): Gate {
 
 interface Picked {
   offer?: Offer;
+  /** 查無報價時顯示的說明 */
+  emptyMessage?: string;
   /** 這次不更新價格，只更新狀態說明 */
   skip?: boolean;
   note: string | null;
@@ -53,11 +55,13 @@ interface Picked {
 }
 
 async function pickHotel(w: HotelWatch, force: boolean, plan: SerpPlan | null): Promise<Picked> {
-  if (!needsSerp(w)) return { offer: (await searchHotels(w.params, { bypassCache: force })).offers[0], note: null, extraLines: [], patch: {} };
+  const emptyMessage = w.params.hotelName ? '查不到這間飯店在這個日期的價格，可能還沒開放預訂或已客滿' : undefined;
+  if (!needsSerp(w)) return { offer: (await searchHotels(w.params, { bypassCache: force })).offers[0], emptyMessage, note: null, extraLines: [], patch: {} };
   const gate = serpGate(w, plan, force);
   if (!gate.ok) return { skip: true, note: gate.note, extraLines: [], patch: {} };
   return {
     offer: (await searchHotels(w.params, { bypassCache: force })).offers[0],
+    emptyMessage,
     note: plan ? `每 ${plan.spacingHours} 小時向 Google 查價一次` : null,
     extraLines: [],
     usedSerp: 'hotel',
@@ -174,8 +178,9 @@ export async function checkWatch(w: Watch, opts: { force?: boolean; plan?: SerpP
     }
     const offer = picked.offer;
     if (!offer) {
-      await updateWatch(w.id, { ...common, lastError: '查無報價' });
-      outcome.error = '查無報價';
+      const msg = picked.emptyMessage ?? '查無報價';
+      await updateWatch(w.id, { ...common, lastError: msg });
+      outcome.error = msg;
       return outcome;
     }
 

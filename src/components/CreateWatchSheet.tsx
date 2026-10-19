@@ -11,7 +11,7 @@ import { Sheet } from './Sheet';
 import { toast } from './Toast';
 import { Chip, PrimaryButton, Toggle } from './ui';
 
-const INTERVALS: [number, string][] = [
+export const INTERVALS: [number, string][] = [
   [5, '5 分鐘'],
   [15, '15 分鐘'],
   [30, '30 分鐘'],

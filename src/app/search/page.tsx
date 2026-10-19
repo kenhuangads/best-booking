@@ -372,7 +372,7 @@ function HotelResults({ params }: { params: HotelSearchParams }) {
         onClose={() => setSel(null)}
         onWatch={(o) => {
           setSel(null);
-          setDraft({ params: { ...params, keyword: undefined, hotelName: o.name }, price: o.totalPrice, title: o.name });
+          setDraft({ params: { ...params, keyword: undefined, hotelName: o.name, propertyToken: o.propertyToken }, price: o.totalPrice, title: o.name });
         }}
       />
       {draft && (

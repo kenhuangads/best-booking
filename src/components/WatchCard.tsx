@@ -9,11 +9,13 @@ import type { Watch } from '@/lib/types';
 import { watchSubtitle } from '@/lib/watchText';
 import { Sparkline } from './Sparkline';
 import { toast } from './Toast';
+import { WatchFormSheet } from './WatchFormSheet';
 
 type Busy = null | 'check' | 'toggle' | 'delete';
 
 export function WatchCard({ w, onChanged }: { w: Watch; onChanged: () => void }) {
   const [busy, setBusy] = useState<Busy>(null);
+  const [form, setForm] = useState<null | 'edit' | 'copy'>(null);
   const price = w.lastPrice;
   const target = w.targetPrice;
   const hit = price != null && target != null && price <= target;
@@ -112,29 +114,36 @@ export function WatchCard({ w, onChanged }: { w: Watch; onChanged: () => void })
       {w.note && !w.lastError && <div className="mt-0.5 text-[11px] text-gray-500">{w.note}</div>}
       {w.lastError && <div className="mt-0.5 text-[11px] text-red-500">{w.lastError}</div>}
 
-      <div className="mt-3 grid grid-cols-4 gap-2">
-        <button type="button" onClick={check} disabled={!!busy} className={`${btn} bg-brand-50 text-brand-700`}>
+      <div className="mt-3 grid grid-cols-3 gap-2">
+        <button type="button" onClick={check} disabled={!!busy} className={`${btn} bg-brand-50 text-brand-700 lg:hover:bg-brand-100`}>
           {busy === 'check' ? '檢查中…' : '立即檢查'}
         </button>
-        <button type="button" onClick={toggle} disabled={!!busy} className={`${btn} bg-gray-100 text-gray-700`}>
-          {w.active ? '暫停' : '恢復'}
+        <button type="button" onClick={() => setForm('edit')} disabled={!!busy} className={`${btn} bg-gray-100 text-gray-700 lg:hover:bg-gray-200`}>
+          ✏️ 編輯
+        </button>
+        <button type="button" onClick={() => setForm('copy')} disabled={!!busy} className={`${btn} bg-gray-100 text-gray-700 lg:hover:bg-gray-200`}>
+          📋 複製換日期
         </button>
         {bookUrl ? (
-          <a href={bookUrl} target="_blank" rel="noopener noreferrer" className={`${btn} bg-gray-100 text-gray-700`}>
+          <a href={bookUrl} target="_blank" rel="noopener noreferrer" className={`${btn} bg-gray-100 text-gray-700 lg:hover:bg-gray-200`}>
             預訂 ↗
           </a>
         ) : (
-          <Link href={searchHref} className={`${btn} bg-gray-100 text-gray-700`}>
+          <Link href={searchHref} className={`${btn} bg-gray-100 text-gray-700 lg:hover:bg-gray-200`}>
             查看
           </Link>
         )}
-        <button type="button" onClick={del} disabled={!!busy} className={`${btn} bg-red-50 text-red-600`}>
+        <button type="button" onClick={toggle} disabled={!!busy} className={`${btn} bg-gray-100 text-gray-700 lg:hover:bg-gray-200`}>
+          {w.active ? '暫停' : '恢復'}
+        </button>
+        <button type="button" onClick={del} disabled={!!busy} className={`${btn} bg-red-50 text-red-600 lg:hover:bg-red-100`}>
           刪除
         </button>
       </div>
       <Link href={searchHref} className="mt-2 block py-1 text-center text-[11px] text-brand-600">
         查看完整搜尋結果 ›
       </Link>
+      <WatchFormSheet watch={form ? w : null} mode={form ?? 'edit'} onClose={() => setForm(null)} onSaved={onChanged} />
     </div>
   );
 }

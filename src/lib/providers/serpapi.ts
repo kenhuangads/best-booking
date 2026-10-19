@@ -206,6 +206,8 @@ export async function searchHotelsSerpApi(p: HotelSearchParams): Promise<HotelOf
     gl: 'tw',
     // 用名稱找飯店時依相關度排序，才不會被附近較便宜的飯店擠下去
     sort_by: p.hotelName || p.keyword ? undefined : 3,
+    // 有飯店編號就直接查那一間
+    property_token: p.propertyToken,
   });
 
   // 查詢剛好對到單一飯店時，SerpApi 會把飯店資料直接放在最上層
@@ -235,6 +237,7 @@ export async function searchHotelsSerpApi(p: HotelSearchParams): Promise<HotelOf
       freeCancel: h.prices?.some((x) => x.free_cancellation) || undefined,
       lat,
       lng,
+      propertyToken: h.property_token,
       source: 'serpapi',
       deepLinks: h.link ? [{ kind: 'other', label: '飯店官網', url: h.link }] : [],
     });

@@ -43,6 +43,7 @@ export const hotelParamsSchema = z
     rooms: z.coerce.number().int().min(1).max(5).default(1),
     hotelName: z.string().trim().min(1).max(120).optional(),
     keyword: z.string().trim().min(1).max(80).optional(),
+    propertyToken: z.string().trim().min(1).max(400).optional(),
   })
   .superRefine((d, ctx) => {
     if (!getCity(d.city)) ctx.addIssue({ code: 'custom', message: `不支援的目的地 ${d.city}` });
@@ -60,6 +61,8 @@ export const watchInputSchema = z.object({
 });
 
 export const watchPatchSchema = z.object({
+  /** 改日期等搜尋條件（依追蹤類型驗證） */
+  params: z.record(z.unknown()).optional(),
   title: z.string().trim().min(1).max(80).optional(),
   targetPrice: z.number().int().positive().nullable().optional(),
   notifyOnDrop: z.boolean().optional(),
@@ -109,6 +112,7 @@ export function parseHotelQuery(sp: Source): Parsed<HotelSearchParams> {
     rooms: g('rooms'),
     hotelName: g('hotel') ?? g('hotelName'),
     keyword: g('q') ?? g('keyword'),
+    propertyToken: g('pt') ?? g('propertyToken'),
   });
   return r.success ? { ok: true, value: r.data } : { ok: false, error: issues(r.error) };
 }
@@ -141,5 +145,6 @@ export function hotelParamsToQuery(p: HotelSearchParams): string {
   });
   if (p.hotelName) sp.set('hotel', p.hotelName);
   if (p.keyword) sp.set('q', p.keyword);
+  if (p.propertyToken) sp.set('pt', p.propertyToken);
   return sp.toString();
 }

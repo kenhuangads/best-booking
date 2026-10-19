@@ -92,6 +92,26 @@ export async function searchFlights(p: FlightSearchParams, opts: SearchOptions =
   return res;
 }
 
+const normHotel = (s: string) => s.toLowerCase().replace(/[\s·・\-–—_,.()（）'’]/g, '');
+
+/** 名稱寫法不同也算同一間：去掉空白標點後相同，或一方包含另一方 */
+export function sameHotelName(a: string, b: string): boolean {
+  const x = normHotel(a);
+  const y = normHotel(b);
+  if (!x || !y) return false;
+  return x === y || (x.length >= 4 && y.includes(x)) || (y.length >= 4 && x.includes(y));
+}
+
+/** 追蹤單一飯店：先用飯店編號比對，再用名稱；用編號查回來只有一間時直接採用 */
+function pickHotelMatches(raw: HotelOffer[], p: HotelSearchParams): HotelOffer[] {
+  if (!p.hotelName) return raw;
+  const byToken = p.propertyToken ? raw.filter((o) => o.propertyToken === p.propertyToken) : [];
+  if (byToken.length) return byToken;
+  const byName = raw.filter((o) => sameHotelName(o.name, p.hotelName!));
+  if (byName.length) return byName;
+  return p.propertyToken && raw.length === 1 ? raw : [];
+}
+
 export async function searchHotels(p: HotelSearchParams, opts: SearchOptions = {}): Promise<SearchResponse<HotelOffer>> {
   const key = 'h:' + JSON.stringify(p);
   if (!opts.bypassCache) {
@@ -101,9 +121,7 @@ export async function searchHotels(p: HotelSearchParams, opts: SearchOptions = {
   const provider = env.hotelProvider;
   const raw =
     provider === 'serpapi' ? await searchHotelsSerpApi(p) : provider === 'amadeus' ? await searchHotelsAmadeus(p) : await searchHotelsDemo(p);
-  const matched = raw
-    .filter((o) => !p.hotelName || o.name === p.hotelName)
-    .map((o) => ({ ...o, deepLinks: mergeLinks(hotelDeepLinks(p, o.name), o.deepLinks) }));
+  const matched = pickHotelMatches(raw, p).map((o) => ({ ...o, deepLinks: mergeLinks(hotelDeepLinks(p, o.name), o.deepLinks) }));
   // 用名稱搜尋時保留相關度順序；其他情況（含追蹤檢查）依價格由低到高
   const offers = p.keyword && !p.hotelName ? matched : matched.sort((a, b) => a.totalPrice - b.totalPrice);
   const res: SearchResponse<HotelOffer> = {
