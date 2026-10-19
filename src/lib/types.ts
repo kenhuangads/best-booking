@@ -105,6 +105,8 @@ export interface HotelOffer {
   propertyToken?: string;
   /** 不在搜尋的城市（用名稱直接找到的） */
   outsideCity?: boolean;
+  /** 找到飯店但這個日期查不到房價（尚未開放訂房或已客滿）；此時 totalPrice 為 0 */
+  noPrice?: boolean;
   source: ProviderName;
   deepLinks: DeepLink[];
 }

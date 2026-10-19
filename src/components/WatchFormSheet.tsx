@@ -197,7 +197,11 @@ export function WatchFormSheet({ watch, mode, onClose, onSaved }: Props) {
         startLabel={isFlight ? '出發' : '入住'}
         endLabel={isFlight ? '回程' : '退房'}
         unit={isFlight ? '天' : '晚'}
-        farNote={isFlight ? { afterDays: 330, text: '出發日超過 11 個月，部分航空公司可能還沒開賣，查不到價格是正常的' } : undefined}
+        farNote={
+          isFlight
+            ? { afterDays: 330, text: '出發日超過 11 個月，部分航空公司可能還沒開賣，查不到價格是正常的' }
+            : { afterDays: 180, text: '入住日超過 6 個月，部分飯店可能還沒開放訂房；追蹤會持續檢查，開放後自動通知' }
+        }
         onConfirm={({ start: s, end: e }) => {
           setStart(s);
           setEnd(roundTrip ? e : null);

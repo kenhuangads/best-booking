@@ -5,7 +5,7 @@ import { buildWatchPayload, payloadText } from './notify/messages';
 import { needsSerp, serpPlan, type SerpPlan } from './quota';
 import { addPricePoint, createAlert, listWatches, recordSerpCall, updateWatch, type WatchPatch } from './repo';
 import { offerPrice, searchFlights, searchHotels } from './search';
-import type { ChannelResult, FlightWatch, HotelWatch, Offer, Watch } from './types';
+import type { ChannelResult, FlightWatch, HotelOffer, HotelWatch, Offer, Watch } from './types';
 
 export interface CheckOutcome {
   id: string;
@@ -54,14 +54,24 @@ interface Picked {
   patch: WatchPatch;
 }
 
+/** 查到飯店但沒房價（還沒開放訂房或已客滿）：不當作價格，之後照頻率繼續查 */
+function pricedHotel(offer: HotelOffer | undefined): { offer?: HotelOffer; emptyMessage?: string } {
+  if (offer?.noPrice) return { emptyMessage: `${offer.name} 這個日期還查不到房價，可能尚未開放訂房或已客滿，會繼續幫你查` };
+  return { offer };
+}
+
 async function pickHotel(w: HotelWatch, force: boolean, plan: SerpPlan | null): Promise<Picked> {
   const emptyMessage = w.params.hotelName ? '查不到這間飯店在這個日期的價格，可能還沒開放預訂或已客滿' : undefined;
-  if (!needsSerp(w)) return { offer: (await searchHotels(w.params, { bypassCache: force })).offers[0], emptyMessage, note: null, extraLines: [], patch: {} };
+  if (!needsSerp(w)) {
+    const r = pricedHotel((await searchHotels(w.params, { bypassCache: force })).offers[0]);
+    return { offer: r.offer, emptyMessage: r.emptyMessage ?? emptyMessage, note: null, extraLines: [], patch: {} };
+  }
   const gate = serpGate(w, plan, force);
   if (!gate.ok) return { skip: true, note: gate.note, extraLines: [], patch: {} };
+  const r = pricedHotel((await searchHotels(w.params, { bypassCache: force })).offers[0]);
   return {
-    offer: (await searchHotels(w.params, { bypassCache: force })).offers[0],
-    emptyMessage,
+    offer: r.offer,
+    emptyMessage: r.emptyMessage ?? emptyMessage,
     note: plan ? `每 ${plan.spacingHours} 小時向 Google 查價一次` : null,
     extraLines: [],
     usedSerp: 'hotel',

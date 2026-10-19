@@ -58,8 +58,17 @@ export function HotelDetailSheet({
             <div className="text-xs text-brand-700">
               {fmtRange(params.checkIn, params.checkOut)} · {offer.nights} 晚 · {params.rooms} 房 {params.adults} 人
             </div>
-            <div className="mt-0.5 text-3xl font-bold text-brand-700">{fmtPrice(offer.totalPrice, offer.currency)}</div>
-            <div className="mt-0.5 text-xs text-gray-500">每晚 {fmtPrice(offer.pricePerNight, offer.currency)}（含稅費估算）</div>
+            {offer.noPrice ? (
+              <>
+                <div className="mt-0.5 text-xl font-bold text-amber-800">這個日期查不到房價</div>
+                <div className="mt-0.5 text-xs text-gray-500">可能還沒開放訂房或已客滿。加入追蹤後，開放訂房或有空房時會自動通知你。</div>
+              </>
+            ) : (
+              <>
+                <div className="mt-0.5 text-3xl font-bold text-brand-700">{fmtPrice(offer.totalPrice, offer.currency)}</div>
+                <div className="mt-0.5 text-xs text-gray-500">每晚 {fmtPrice(offer.pricePerNight, offer.currency)}（含稅費估算）</div>
+              </>
+            )}
             <div className="mt-2 flex flex-wrap gap-1.5">
               {offer.roomType && <Tag>{offer.roomType}</Tag>}
               {offer.breakfast && <Tag>含早餐</Tag>}

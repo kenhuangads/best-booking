@@ -152,6 +152,7 @@ export function HotelSearchForm() {
         startLabel="入住"
         endLabel="退房"
         unit="晚"
+        farNote={{ afterDays: 180, text: '入住日超過 6 個月，部分飯店可能還沒開放訂房，查不到房價是正常的' }}
         onConfirm={({ start, end }) => update({ checkIn: start, checkOut: end ?? addDays(start, 1) })}
       />
       <GuestPicker open={sheet === 'guests'} onClose={() => setSheet(null)} value={{ adults: f.adults, rooms: f.rooms }} onChange={(v) => update(v)} />

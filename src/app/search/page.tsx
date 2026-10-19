@@ -17,7 +17,7 @@ import { airportCity } from '@/lib/airports';
 import { getCity } from '@/lib/cities';
 import { fetcher } from '@/lib/client';
 import { flightTitle, hotelTitle } from '@/lib/deeplinks';
-import { addDays, diffDays, fmtPrice, fmtRange } from '@/lib/format';
+import { addDays, diffDays, fmtPrice, fmtRange, todayISO } from '@/lib/format';
 import { flightParamsToQuery, hotelParamsToQuery, parseFlightQuery, parseHotelQuery } from '@/lib/schemas';
 import {
   CABIN_LABEL,
@@ -263,9 +263,10 @@ function HotelResults({ params }: { params: HotelSearchParams }) {
 
   // 用名稱搜尋時結果依相關度排列，最低價要另外算
   const best = useMemo(
-    () => (data?.offers ?? []).reduce<HotelOffer | null>((m, o) => (!m || o.totalPrice < m.totalPrice ? o : m), null),
+    () => (data?.offers ?? []).filter((o) => !o.noPrice).reduce<HotelOffer | null>((m, o) => (!m || o.totalPrice < m.totalPrice ? o : m), null),
     [data],
   );
+  const monthsAhead = Math.floor(diffDays(todayISO(), params.checkIn) / 30);
   const city = getCity(params.city);
   const nights = diffDays(params.checkIn, params.checkOut);
   const subtitle = `${fmtRange(params.checkIn, params.checkOut)} · ${nights} 晚 · ${params.rooms} 房 ${params.adults} 人${
@@ -349,7 +350,13 @@ function HotelResults({ params }: { params: HotelSearchParams }) {
             <EmptyState
               icon="🏨"
               title={params.keyword ? `找不到「${params.keyword}」` : '沒有符合的住宿'}
-              hint={params.keyword ? '試試飯店的其他名稱、英文名，或縮短關鍵字' : '試試取消篩選、更換日期，或用上方輸入飯店名稱搜尋'}
+              hint={
+                monthsAhead >= 6
+                  ? `你選的入住日在 ${monthsAhead} 個月後，很多飯店還沒開放訂房。先用近期日期找到飯店並加入追蹤，再用「編輯」改成想要的日期即可。`
+                  : params.keyword
+                    ? '試試飯店的其他名稱、英文名，或縮短關鍵字'
+                    : '試試取消篩選、更換日期，或用上方輸入飯店名稱搜尋'
+              }
             />
           ) : (
             <div className="space-y-3 xl:grid xl:grid-cols-2 xl:gap-4 xl:space-y-0">
@@ -377,7 +384,7 @@ function HotelResults({ params }: { params: HotelSearchParams }) {
         onClose={() => setSel(null)}
         onWatch={(o) => {
           setSel(null);
-          setDraft({ params: { ...params, keyword: undefined, hotelName: o.name, propertyToken: o.propertyToken }, price: o.totalPrice, title: o.name });
+          setDraft({ params: { ...params, keyword: undefined, hotelName: o.name, propertyToken: o.propertyToken }, price: o.noPrice ? null : o.totalPrice, title: o.name });
         }}
       />
       {draft && (

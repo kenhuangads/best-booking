@@ -113,8 +113,10 @@ export async function searchHotels(p: HotelSearchParams, opts: SearchOptions = {
   const raw =
     provider === 'serpapi' ? await searchHotelsSerpApi(p) : provider === 'amadeus' ? await searchHotelsAmadeus(p) : await searchHotelsDemo(p);
   const matched = pickHotelMatches(raw, p).map((o) => ({ ...o, deepLinks: mergeLinks(hotelDeepLinks(p, o.name), o.deepLinks) }));
-  // 用名稱搜尋時保留相關度順序；其他情況（含追蹤檢查）依價格由低到高
-  const offers = p.keyword && !p.hotelName ? matched : matched.sort((a, b) => a.totalPrice - b.totalPrice);
+  // 用名稱搜尋時保留相關度順序；其他情況（含追蹤檢查）依價格由低到高；查不到房價的排最後
+  const rank = (o: HotelOffer) => (o.noPrice ? Number.POSITIVE_INFINITY : o.totalPrice);
+  const offers =
+    p.keyword && !p.hotelName ? [...matched].sort((a, b) => Number(!!a.noPrice) - Number(!!b.noPrice)) : [...matched].sort((a, b) => rank(a) - rank(b));
   const res: SearchResponse<HotelOffer> = {
     offers,
     provider,

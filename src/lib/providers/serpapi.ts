@@ -221,8 +221,10 @@ export async function searchHotelsSerpApi(p: HotelSearchParams): Promise<HotelOf
     for (const h of list) {
       if (!h.name || /vacation/i.test(h.type ?? '')) continue;
       const perNight = h.rate_per_night?.extracted_lowest;
-      const stayOneRoom = h.total_rate?.extracted_lowest ?? (perNight != null ? perNight * nights : undefined);
-      if (stayOneRoom == null) continue;
+      const priced = h.total_rate?.extracted_lowest ?? (perNight != null ? perNight * nights : undefined);
+      // 指定飯店名稱時，查到飯店但沒房價也要顯示（還沒開放訂房或已客滿），讓使用者可以先追蹤
+      if (priced == null && !(p.hotelName || p.keyword)) continue;
+      const stayOneRoom = priced ?? 0;
       const lat = h.gps_coordinates?.latitude;
       const lng = h.gps_coordinates?.longitude;
       const km = lat != null && lng != null ? distanceKm(city, { lat, lng }) : undefined;
@@ -246,6 +248,7 @@ export async function searchHotelsSerpApi(p: HotelSearchParams): Promise<HotelOf
         lng,
         propertyToken: h.property_token,
         outsideCity: outside || undefined,
+        noPrice: priced == null || undefined,
         source: 'serpapi',
         deepLinks: h.link ? [{ kind: 'other', label: '飯店官網', url: h.link }] : [],
       });

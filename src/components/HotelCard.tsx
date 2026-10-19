@@ -40,13 +40,19 @@ export function HotelCard({ offer, best, onClick }: { offer: HotelOffer; best?: 
           {offer.freeCancel && <Tag tone="ok">免費取消</Tag>}
           {offer.roomType && <Tag tone="muted">{offer.roomType}</Tag>}
         </div>
-        <div className="mt-1.5 flex items-end justify-between">
-          <div className="text-[11px] text-gray-500">{offer.nights} 晚總價</div>
-          <div className="text-right">
-            <div className="text-lg font-bold leading-tight">{fmtPrice(offer.totalPrice, offer.currency)}</div>
-            <div className="text-[11px] text-gray-500">每晚 {fmtPrice(offer.pricePerNight, offer.currency)}</div>
+        {offer.noPrice ? (
+          <div className="mt-1.5 rounded-lg bg-amber-50 px-2 py-1.5 text-[11px] leading-snug text-amber-800">
+            這個日期查不到房價，可能還沒開放訂房或已客滿。可先加入追蹤，開放後自動通知。
           </div>
-        </div>
+        ) : (
+          <div className="mt-1.5 flex items-end justify-between">
+            <div className="text-[11px] text-gray-500">{offer.nights} 晚總價</div>
+            <div className="text-right">
+              <div className="text-lg font-bold leading-tight">{fmtPrice(offer.totalPrice, offer.currency)}</div>
+              <div className="text-[11px] text-gray-500">每晚 {fmtPrice(offer.pricePerNight, offer.currency)}</div>
+            </div>
+          </div>
+        )}
       </div>
     </button>
   );
