@@ -1,4 +1,5 @@
 import { flightDeepLinks, hotelDeepLinks } from './deeplinks';
+import { sameHotelName } from './hotelMatch';
 import { env, errMsg } from './env';
 import { priceCalendarAmadeus, searchFlightsAmadeus, searchHotelsAmadeus } from './providers/amadeus';
 import { priceCalendarDemo, searchFlightsDemo, searchHotelsDemo } from './providers/demo';
@@ -90,16 +91,6 @@ export async function searchFlights(p: FlightSearchParams, opts: SearchOptions =
   const res: SearchResponse<FlightOffer> = { offers, provider, fetchedAt: new Date().toISOString(), cached: false, warnings };
   setCached(key, res);
   return res;
-}
-
-const normHotel = (s: string) => s.toLowerCase().replace(/[\s·・\-–—_,.()（）'’]/g, '');
-
-/** 名稱寫法不同也算同一間：去掉空白標點後相同，或一方包含另一方 */
-export function sameHotelName(a: string, b: string): boolean {
-  const x = normHotel(a);
-  const y = normHotel(b);
-  if (!x || !y) return false;
-  return x === y || (x.length >= 4 && y.includes(x)) || (y.length >= 4 && x.includes(y));
 }
 
 /** 追蹤單一飯店：先用飯店編號比對，再用名稱；用編號查回來只有一間時直接採用 */

@@ -6,6 +6,7 @@
 import { getCity } from '../cities';
 import { env } from '../env';
 import { diffDays } from '../format';
+import { hotelNameHas } from '../hotelMatch';
 import type { Cabin, FlightOffer, FlightSearchParams, FlightSegment, HotelOffer, HotelSearchParams } from '../types';
 
 type Params = Record<string, string | number | boolean | undefined>;
@@ -190,58 +191,78 @@ function distanceKm(a: { lat: number; lng: number }, b: { lat: number; lng: numb
   return 2 * 6371 * Math.asin(Math.sqrt(s));
 }
 
+/** 離選定城市超過這個距離，就當作「不在這個城市」，也不顯示距市中心距離 */
+const OUTSIDE_CITY_KM = 50;
+
 export async function searchHotelsSerpApi(p: HotelSearchParams): Promise<HotelOffer[]> {
   const city = getCity(p.city);
   if (!city) throw new Error('不支援的目的地');
   const nights = Math.max(1, diffDays(p.checkIn, p.checkOut));
-  const r = await serpGet<SerpHotelsResp>({
-    engine: 'google_hotels',
-    q: p.hotelName ? `${p.hotelName} ${city.searchName}` : p.keyword ? `${p.keyword} ${city.searchName}` : `${city.searchName} 飯店`,
-    check_in_date: p.checkIn,
-    check_out_date: p.checkOut,
-    // Google 飯店不分房數：以每房人數查詢，總價再乘上房數
-    adults: Math.max(1, Math.ceil(p.adults / p.rooms)),
-    currency: 'TWD',
-    hl: 'zh-TW',
-    gl: 'tw',
-    // 用名稱找飯店時依相關度排序，才不會被附近較便宜的飯店擠下去
-    sort_by: p.hotelName || p.keyword ? undefined : 3,
-    // 有飯店編號就直接查那一間
-    property_token: p.propertyToken,
-  });
 
-  // 查詢剛好對到單一飯店時，SerpApi 會把飯店資料直接放在最上層
-  const list: SerpProperty[] = r.properties ?? (r.name ? [r as SerpProperty] : []);
-  const out: HotelOffer[] = [];
-  for (const h of list) {
-    if (!h.name || /vacation/i.test(h.type ?? '')) continue;
-    const perNight = h.rate_per_night?.extracted_lowest;
-    const stayOneRoom = h.total_rate?.extracted_lowest ?? (perNight != null ? perNight * nights : undefined);
-    if (stayOneRoom == null) continue;
-    const lat = h.gps_coordinates?.latitude;
-    const lng = h.gps_coordinates?.longitude;
-    const stars = h.extracted_hotel_class ?? (h.hotel_class ? parseInt(h.hotel_class, 10) || undefined : undefined);
-    out.push({
-      id: `serp-${h.property_token ?? h.name}`,
-      kind: 'hotel',
-      name: h.name,
-      stars,
-      rating: h.overall_rating,
-      reviewCount: h.reviews,
-      distanceKm: lat != null && lng != null ? Math.round(distanceKm(city, { lat, lng }) * 10) / 10 : undefined,
-      pricePerNight: Math.round(stayOneRoom / nights),
-      totalPrice: Math.round(stayOneRoom * p.rooms),
+  const run = async (q: string): Promise<HotelOffer[]> => {
+    const r = await serpGet<SerpHotelsResp>({
+      engine: 'google_hotels',
+      q,
+      check_in_date: p.checkIn,
+      check_out_date: p.checkOut,
+      // Google 飯店不分房數：以每房人數查詢，總價再乘上房數
+      adults: Math.max(1, Math.ceil(p.adults / p.rooms)),
       currency: 'TWD',
-      nights,
-      breakfast: h.amenities?.some((a) => /免費早餐|早餐免費|free breakfast/i.test(a)) || undefined,
-      freeCancel: h.prices?.some((x) => x.free_cancellation) || undefined,
-      lat,
-      lng,
-      propertyToken: h.property_token,
-      source: 'serpapi',
-      deepLinks: h.link ? [{ kind: 'other', label: '飯店官網', url: h.link }] : [],
+      hl: 'zh-TW',
+      gl: 'tw',
+      // 用名稱找飯店時依相關度排序，才不會被附近較便宜的飯店擠下去
+      sort_by: p.hotelName || p.keyword ? undefined : 3,
+      // 有飯店編號就直接查那一間
+      property_token: p.propertyToken,
     });
-  }
-  // 保留 Google 的順序（用名稱搜尋時是相關度），價格排序交給 search.ts
-  return out;
+    // 查詢剛好對到單一飯店時，SerpApi 會把飯店資料直接放在最上層
+    const list: SerpProperty[] = r.properties ?? (r.name ? [r as SerpProperty] : []);
+    const out: HotelOffer[] = [];
+    for (const h of list) {
+      if (!h.name || /vacation/i.test(h.type ?? '')) continue;
+      const perNight = h.rate_per_night?.extracted_lowest;
+      const stayOneRoom = h.total_rate?.extracted_lowest ?? (perNight != null ? perNight * nights : undefined);
+      if (stayOneRoom == null) continue;
+      const lat = h.gps_coordinates?.latitude;
+      const lng = h.gps_coordinates?.longitude;
+      const km = lat != null && lng != null ? distanceKm(city, { lat, lng }) : undefined;
+      const outside = km != null && km > OUTSIDE_CITY_KM;
+      const stars = h.extracted_hotel_class ?? (h.hotel_class ? parseInt(h.hotel_class, 10) || undefined : undefined);
+      out.push({
+        id: `serp-${h.property_token ?? h.name}`,
+        kind: 'hotel',
+        name: h.name,
+        stars,
+        rating: h.overall_rating,
+        reviewCount: h.reviews,
+        distanceKm: km != null && !outside ? Math.round(km * 10) / 10 : undefined,
+        pricePerNight: Math.round(stayOneRoom / nights),
+        totalPrice: Math.round(stayOneRoom * p.rooms),
+        currency: 'TWD',
+        nights,
+        breakfast: h.amenities?.some((a) => /免費早餐|早餐免費|free breakfast/i.test(a)) || undefined,
+        freeCancel: h.prices?.some((x) => x.free_cancellation) || undefined,
+        lat,
+        lng,
+        propertyToken: h.property_token,
+        outsideCity: outside || undefined,
+        source: 'serpapi',
+        deepLinks: h.link ? [{ kind: 'other', label: '飯店官網', url: h.link }] : [],
+      });
+    }
+    return out;
+  };
+
+  // 追蹤單一飯店且有 Google 飯店編號：只用名稱查，飯店不一定在選的城市
+  if (p.hotelName && p.propertyToken) return run(p.hotelName);
+
+  const named = p.hotelName ?? p.keyword;
+  const inCity = await run(named ? `${named} ${city.searchName}` : `${city.searchName} 飯店`);
+  const found = (list: HotelOffer[]) => list.some((o) => hotelNameHas(o.name, named!) || (!!p.propertyToken && o.propertyToken === p.propertyToken));
+  if (!named || found(inCity)) return inCity;
+
+  // 在選的城市找不到這個名稱（例如選了東京、飯店其實在河口湖）：改用名稱直接找，放在前面
+  const byName = await run(named);
+  const seen = new Set(byName.map((o) => o.id));
+  return [...byName, ...inCity.filter((o) => !seen.has(o.id))];
 }

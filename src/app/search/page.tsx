@@ -331,6 +331,11 @@ function HotelResults({ params }: { params: HotelSearchParams }) {
       >
         <div className="space-y-3 px-4 pt-1 lg:px-0 lg:pt-0">
           <HotelNameSearch params={params} />
+          {!isLoading && data?.offers.some((o) => o.outsideCity) && (
+            <p className="rounded-xl bg-amber-50 px-3 py-2 text-xs leading-relaxed text-amber-800">
+              「{params.keyword ?? params.hotelName}」不在{city?.name ?? '你選的城市'}，已改用名稱直接搜尋。目的地清單裡有的話，改選正確的城市結果會更準。
+            </p>
+          )}
           {params.keyword && !isLoading && list.length > 0 && (
             <p className="rounded-xl bg-brand-50 px-3 py-2 text-xs leading-relaxed text-brand-700">
               點選你要的飯店，再按「追蹤此飯店」，之後就只盯那一間的價格。

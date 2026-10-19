@@ -103,6 +103,8 @@ export interface HotelOffer {
   lng?: number;
   /** Google 飯店的編號（SerpApi） */
   propertyToken?: string;
+  /** 不在搜尋的城市（用名稱直接找到的） */
+  outsideCity?: boolean;
   source: ProviderName;
   deepLinks: DeepLink[];
 }
