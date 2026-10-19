@@ -161,6 +161,7 @@ export function FlightSearchForm() {
         open={sheet === 'dates'}
         onClose={() => setSheet(null)}
         mode={f.tripType === 'round' ? 'range' : 'single'}
+        farNote={{ afterDays: 330, text: '出發日超過 11 個月，部分航空公司可能還沒開賣，查不到價格是正常的' }}
         start={f.dep}
         end={f.tripType === 'round' ? f.ret : null}
         onConfirm={({ start, end }) => update({ dep: start, ret: end ?? (f.ret < start ? addDays(start, 4) : f.ret) })}

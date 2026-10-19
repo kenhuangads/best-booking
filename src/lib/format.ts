@@ -29,6 +29,16 @@ export function addDays(iso: string, n: number): string {
   return toISO(d);
 }
 
+/** 加幾個月，日期超過該月最後一天時取最後一天：2026-10-31 + 4 個月 → 2027-02-28 */
+export function addMonths(iso: string, n: number): string {
+  const d = parseISO(iso);
+  const day = d.getDate();
+  d.setDate(1);
+  d.setMonth(d.getMonth() + n);
+  d.setDate(Math.min(day, new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate()));
+  return toISO(d);
+}
+
 export function diffDays(a: string, b: string): number {
   return Math.round((parseISO(b).getTime() - parseISO(a).getTime()) / 86400000);
 }

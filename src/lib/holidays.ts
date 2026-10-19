@@ -1,6 +1,6 @@
 /**
  * 台灣國定假日與連續假期（供日期選擇器標示與旺季價格估算）。
- * 2026 依行政院人事行政總處 115 年行事曆；2027 為依《紀念日及節日實施條例》推算之預估值，
+ * 2026 依行政院人事行政總處 115 年行事曆；2027–2028 為依《紀念日及節日實施條例》推算之預估值，
  * 以人事行政總處正式公告為準。
  */
 export interface Holiday {
@@ -64,7 +64,17 @@ export const HOLIDAYS: Holiday[] = [
   { date: '2027-10-25', name: '光復節', short: '光復節', estimated: true },
   { date: '2027-12-24', name: '行憲紀念日補假', short: '補假', estimated: true },
   { date: '2027-12-25', name: '行憲紀念日', short: '行憲', estimated: true },
+  // ── 2028（預估，日期選擇器最遠到 18 個月後） ──
+  { date: '2027-12-31', name: '元旦補假', short: '補假', estimated: true },
   { date: '2028-01-01', name: '元旦', short: '元旦', estimated: true },
+  { date: '2028-01-24', name: '小年夜', short: '小年夜', estimated: true },
+  { date: '2028-01-25', name: '除夕', short: '除夕', estimated: true },
+  { date: '2028-01-26', name: '春節初一', short: '初一', estimated: true },
+  { date: '2028-01-27', name: '春節初二', short: '初二', estimated: true },
+  { date: '2028-01-28', name: '春節初三', short: '初三', estimated: true },
+  { date: '2028-02-28', name: '和平紀念日', short: '228', estimated: true },
+  { date: '2028-04-03', name: '兒童節（與清明同日，提前一天）', short: '兒童節', estimated: true },
+  { date: '2028-04-04', name: '清明節', short: '清明', estimated: true },
 ];
 
 export const LONG_WEEKENDS: LongWeekend[] = [
@@ -85,6 +95,10 @@ export const LONG_WEEKENDS: LongWeekend[] = [
   { name: '國慶連假', start: '2027-10-09', end: '2027-10-11', estimated: true },
   { name: '光復節連假', start: '2027-10-23', end: '2027-10-25', estimated: true },
   { name: '聖誕行憲連假', start: '2027-12-24', end: '2027-12-26', estimated: true },
+  { name: '元旦連假', start: '2027-12-31', end: '2028-01-02', estimated: true },
+  { name: '春節', start: '2028-01-22', end: '2028-01-30', estimated: true },
+  { name: '228 連假', start: '2028-02-26', end: '2028-02-28', estimated: true },
+  { name: '清明連假', start: '2028-04-01', end: '2028-04-04', estimated: true },
 ];
 
 export const HOLIDAY_MAP = new Map(HOLIDAYS.map((h) => [h.date, h]));

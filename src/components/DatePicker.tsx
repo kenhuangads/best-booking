@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { diffDays, fmtDate, parseISO, todayISO, toISO, WEEKDAYS } from '@/lib/format';
+import { addMonths, diffDays, fmtDate, parseISO, todayISO, toISO, WEEKDAYS } from '@/lib/format';
 import { getHoliday, inLongWeekend, upcomingLongWeekends } from '@/lib/holidays';
 import { Sheet } from './Sheet';
 import { PrimaryButton } from './ui';
@@ -17,8 +17,18 @@ interface Props {
   startLabel?: string;
   endLabel?: string;
   minDate?: string;
-  monthsAhead?: number;
+  /** 最遠可選到今天起幾個月後 */
+  maxMonths?: number;
+  /** 出發日距今超過這個天數時在下方提醒（機票用：航空公司可能還沒開賣） */
+  farNote?: { afterDays: number; text: string };
   unit?: '天' | '晚';
+}
+
+/** 兩個日期之間跨幾個月（含頭尾） */
+function monthSpan(a: string, b: string): number {
+  const [ay, am] = a.split('-').map(Number);
+  const [by, bm] = b.split('-').map(Number);
+  return (by - ay) * 12 + (bm - am) + 1;
 }
 
 interface Month {
@@ -56,7 +66,8 @@ export function DatePicker({
   startLabel = '出發',
   endLabel = '回程',
   minDate,
-  monthsAhead = 12,
+  maxMonths = 18,
+  farNote,
   unit = '天',
 }: Props) {
   const [s, setS] = useState<string | null>(start);
@@ -71,10 +82,12 @@ export function DatePicker({
     }
   }, [open, start, end]);
 
-  const min = minDate ?? todayISO();
   const today = todayISO();
-  const months = useMemo(() => buildMonths(min, monthsAhead), [min, monthsAhead]);
-  const quick = useMemo(() => upcomingLongWeekends(min, 6), [min]);
+  const min = minDate ?? today;
+  const max = useMemo(() => addMonths(today, maxMonths), [today, maxMonths]);
+  const months = useMemo(() => buildMonths(min, monthSpan(min, max)), [min, max]);
+  const quick = useMemo(() => upcomingLongWeekends(min, 12).filter((lw) => lw.start <= max), [min, max]);
+  const showFarNote = !!farNote && !!s && diffDays(today, s) > farNote.afterDays;
 
   const pick = (d: string) => {
     if (mode === 'single') {
@@ -114,7 +127,10 @@ export function DatePicker({
       wide
       footer={
         <div className="lg:flex lg:items-center lg:justify-between lg:gap-4">
-          <div className="mb-2 text-center text-sm text-gray-600 lg:mb-0 lg:text-left">{summary}</div>
+          <div className="mb-2 text-center lg:mb-0 lg:text-left">
+            <div className="text-sm text-gray-600">{summary}</div>
+            {showFarNote && <div className="mt-0.5 text-xs text-amber-700">{farNote?.text}</div>}
+          </div>
           <PrimaryButton
             className="lg:w-48"
             disabled={!valid}
@@ -161,7 +177,7 @@ export function DatePicker({
               <WeekdayRow />
             </div>
             <div className="grid grid-cols-7 gap-y-1">
-              {m.cells.map((d, i) => (d ? <DayCell key={d} d={d} min={min} today={today} s={s} e={e} onPick={pick} /> : <div key={`e${i}`} />))}
+              {m.cells.map((d, i) => (d ? <DayCell key={d} d={d} min={min} max={max} today={today} s={s} e={e} onPick={pick} /> : <div key={`e${i}`} />))}
             </div>
           </div>
         ))}
@@ -189,6 +205,7 @@ function WeekdayRow() {
 function DayCell({
   d,
   min,
+  max,
   today,
   s,
   e,
@@ -196,12 +213,13 @@ function DayCell({
 }: {
   d: string;
   min: string;
+  max: string;
   today: string;
   s: string | null;
   e: string | null;
   onPick: (d: string) => void;
 }) {
-  const disabled = d < min;
+  const disabled = d < min || d > max;
   const hol = getHoliday(d);
   const lw = inLongWeekend(d);
   const isStart = d === s;
